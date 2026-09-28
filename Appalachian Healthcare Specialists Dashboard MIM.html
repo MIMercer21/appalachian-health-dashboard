@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Appalachian Region — Provider Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+:root {
+  --bg: #050d1a;
+  --surface: #0b1829;
+  --surface2: #112035;
+  --border: #1a3050;
+  --accent: #4a9fd4;
+  --accent2: #5bc4a0;
+  --accent3: #7ab8e8;
+  --danger: #e05c5c;
+  --text: #d8e8f5;
+  --muted: #5a7fa0;
+  --muted2: #1e3a55;
+  --cai-navy: #0d2346;
+  --cai-blue: #1a5fa0;
+  --cai-mid: #2980b9;
+  --cai-light: #5ba3d0;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+}
+
+/* ── HEADER ── */
+header {
+  background: linear-gradient(135deg, var(--cai-navy) 0%, #071530 60%, #050d1a 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 24px 36px;
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+
+
+
+.header-title h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.7rem;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.header-title p {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--cai-light, var(--accent));
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  margin-top: 3px;
+}
+
+.county-selector-wrap {
+  margin-left: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.county-selector-wrap label {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+#countySelect {
+  background: var(--bg);
+  border: 1px solid var(--cai-blue);
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.8rem;
+  padding: 8px 14px;
+  border-radius: 6px;
+  outline: none;
+  cursor: pointer;
+  min-width: 200px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23c9a84c' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
+#countySelect:focus { border-color: var(--cai-light); box-shadow: 0 0 0 2px rgba(90,163,208,0.2); }
+
+/* ── STATS BAR ── */
+.stats-bar {
+  display: flex;
+  background: linear-gradient(90deg, var(--cai-navy) 0%, var(--surface) 100%);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+}
+
+.stat-pill {
+  flex: 1;
+  min-width: 80px;
+  padding: 14px 18px;
+  border-right: 1px solid var(--border);
+  transition: background 0.15s;
+}
+
+.stat-pill:last-child { border-right: none; }
+.stat-pill:hover { background: var(--surface2); }
+
+.stat-year {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.stat-count {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--cai-light);
+  line-height: 1.1;
+  margin: 3px 0 2px;
+}
+
+.stat-delta {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.62rem;
+}
+
+.up { color: var(--accent2); }
+.dn { color: var(--danger); }
+.fl { color: var(--muted); }
+
+/* ── TABS ── */
+.tabs {
+  display: flex;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 36px;
+  overflow-x: auto;
+}
+
+.tab {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 13px 18px;
+  cursor: pointer;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: all 0.15s;
+  user-select: none;
+}
+
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--cai-light); border-bottom-color: var(--cai-light); }
+
+/* ── PANELS ── */
+.panel { display: none; padding: 28px 36px; }
+.panel.active { display: block; }
+
+/* ── CARDS ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 22px;
+}
+
+.card-title {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--cai-light);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 18px;
+}
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+canvas { max-height: 400px; }
+
+/* ── MOBILE ── */
+@media(max-width:640px) {
+  /* Header */
+  header {
+    padding: 14px 16px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  header img { height: 44px; }
+  .header-divider { display: none; }
+  .header-title h1 { font-size: 1.1rem; }
+  .header-title p { font-size: 0.6rem; }
+  .county-selector-wrap {
+    width: 100%;
+    justify-content: space-between;
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+    margin-top: 4px;
+  }
+  #countySelect { flex: 1; font-size: 0.8rem; }
+
+  /* Stats bar */
+  .stats-bar { flex-wrap: wrap; }
+  .stat-pill {
+    flex: 0 0 50%;
+    min-width: 50%;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding: 10px 14px;
+  }
+  .stat-pill:nth-child(odd) { border-right: 1px solid var(--border); }
+  .stat-count { font-size: 1.15rem; }
+  .stat-year { font-size: 0.6rem; }
+
+  /* Tabs — scrollable strip */
+  .tabs {
+    padding: 0 8px;
+    gap: 0;
+  }
+  .tab {
+    font-size: 0.6rem;
+    padding: 11px 10px;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+
+  /* Panels */
+  .panel { padding: 12px 12px; }
+  .card { padding: 14px 12px; border-radius: 8px; }
+  .card-title { font-size: 0.68rem; margin-bottom: 10px; }
+
+  /* Grid: always 1-col on mobile */
+  .grid-2 { grid-template-columns: 1fr; gap: 12px; }
+  .compare-grid { grid-template-columns: 1fr; gap: 12px; }
+
+  /* Heatmap sort buttons */
+  #heatmap .card > div:first-child { flex-direction: column; align-items: flex-start; gap: 8px; }
+  #sortAmount, #sortAlpha { font-size: 0.68rem; padding: 5px 12px; }
+
+  /* Charts — give them breathing room */
+  canvas { max-height: 280px !important; }
+
+  /* Region table — hide less important cols */
+  .region-table th:nth-child(2),
+  .region-table td:nth-child(2) { display: none; }
+  .region-table th:nth-child(5),
+  .region-table td:nth-child(5) { display: none; }
+  .region-table { font-size: 0.65rem; }
+  .region-table td, .region-table th { padding: 7px 6px; }
+  .mini-bar-wrap { min-width: 50px; }
+
+  /* Top-N slider row */
+  .filt { flex-wrap: wrap; gap: 8px; padding: 10px 12px; }
+  .topn-lbl { font-size: 0.68rem; }
+  #topNSlider { width: 100px; }
+
+  /* Year selector row */
+  select { font-size: 0.78rem; }
+
+  /* Growth chart label */
+  .growth-note { font-size: 0.62rem; }
+}
+
+@media(max-width:800px){
+  .grid-2 { grid-template-columns: 1fr; }
+  header, .tabs, .panel { padding-left: 16px; padding-right: 16px; }
+}
+
+
+/* ── HEATMAP ── */
+.heatmap-scroll { overflow-x: auto; }
+
+table.hm {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.67rem;
+}
+
+table.hm th {
+  color: var(--muted);
+  padding: 5px 10px;
+  font-weight: 400;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+table.hm th.yh { text-align: center; min-width: 46px; }
+table.hm td { padding: 4px 10px; border-bottom: 1px solid rgba(255,255,255,0.03); }
+table.hm td.sp { color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.72rem; white-space: nowrap; padding-right: 20px; }
+table.hm td.cv { text-align: center; border-radius: 3px; font-variant-numeric: tabular-nums; }
+table.hm tr:hover td { opacity: 0.8; }
+
+/* ── FILTER ROW ── */
+.filter-row {
+  display: flex; gap: 12px; margin-bottom: 18px; align-items: center; flex-wrap: wrap;
+}
+
+.filter-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+select.inline-sel, input[type=range] {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.72rem;
+  padding: 6px 12px;
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+}
+
+select.inline-sel:focus { border-color: var(--accent); }
+
+.topn-lbl {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--cai-light);
+  min-width: 24px;
+}
+
+/* ── COMPARE PANEL ── */
+.compare-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 18px;
+}
+
+/* compare-grid handled in mobile block above */
+
+.county-badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.68rem;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid;
+  display: inline-block;
+}
+
+/* ── REGION PANEL ── */
+.region-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.7rem;
+}
+
+.region-table th {
+  color: var(--muted);
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.62rem;
+}
+
+.region-table td {
+  padding: 7px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  color: var(--text);
+}
+
+.region-table tr:hover td { background: var(--surface2); }
+.region-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.region-table td.bar-cell { min-width: 120px; }
+
+.mini-bar-bg {
+  background: var(--muted2);
+  border-radius: 2px;
+  height: 6px;
+  width: 100%;
+}
+
+.mini-bar-fill {
+  background: var(--cai-mid);
+  border-radius: 2px;
+  height: 6px;
+}
+
+.sort-btn {
+  cursor: pointer;
+  user-select: none;
+}
+.sort-btn:hover { color: var(--cai-light); }
+</style>
+</head>
+<body>
+
+<header>
+  <img src="data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCACLAWsDASIAAhEBAxEB/8QAHQABAAMBAAMBAQAAAAAAAAAAAAYHCAUDBAkBAv/EAFoQAAEDBAECAwQDCAsJDQkAAAECAwQABQYRBxIhCBMxIkFRYRRxgRUWIzI2QpGxF1ZicnR1gpWhs9EzNDc4UpKywdIYJSZDU2NzdoOTtMLEJCc1RlRllKKj/8QAGgEBAAMBAQEAAAAAAAAAAAAAAAIEBQMBBv/EADURAAEDAgMFBQcEAwEAAAAAAAEAAgMEERIhMQUTQVFxImGBsfAUMjORocHRIyRC8RU1UuH/2gAMAwEAAhEDEQA/ANl0pSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpXOya+WnG7HKvV7nNQoEVHU664dD5AfFRPYAdySAK9AJNgvCQBcrok6GzVV8g898e4i65EFwXe7g2SlUa2dLvQoeoU4SEJI943sfCs581c55Dnst20WJcm048pQbbjtEpkS9nX4UpPodjTY7fEq93S4u8NuUZGwzcMneON25YCksKb6pix+8PZv+Vs/FNa8ezo4m46p1u5ZT6+SV2Cmbfv4Lr5F4rMjfWpGP4vbYLf5q5jq31/XpPQB+k1GHfExyeVb+mWRv5Jg/2qNaMxngHi6yMIQvHk3d1OtvXNfnlR+JT2QPsSKmMbBcJjN+XGw/HmUa10otrKR/Qmvfa6JmTYr9fRT2Wsfm6W3RZPtnih5GjuBUqLj85v3pMZbZP2pX2/RVj4h4qcelrbYymwTrSpXZUiKoSWk/MjQWB9QVVrXjijjW6pImYPYeo/8AGMwkMr/zkAH+mqnzzws2OW07Jwu8SbZJ1tEWaovRyfgFa8xP1kq+qgm2fNk5mH164Lww10WbXh3VXti2S2DKLaLjj13h3OMTorjuhXQfgoeqT8jo11q+edxtvIXEGWIcdE6xXBJ/ByGVEsSkj3BX4rqfik+nvArUfAfOttzrybBkCWLZkoT7ISelibr1LWzsK95QdnXcEgHXGq2c6Nu8jOJq7U20GyO3cgwu5K6aUpWYtFKUpREpSlESlKURKUpREpSlESlKURKUpREpSlESlKURKUpREpSlESlKURKUpREpSlESlKURKUpREpSlEX8PutsMreecS202kqWtR0EgDZJPuFYY8QHJ8/k3LkWy0ecqxRpAZtsZvZMt0npDxA9VKJ0ge4Ee8mru8ZmcrseHR8RgPdE2+dX0kpPdMVP4w/lkhP1BVRHwZcctS3neQ7swFoYcVHtTaxsdY7OP/Z3QPn1/I1s0LGU8JqpB0WTWPdPKKZh6qeeHjg+BhkSPkWSsNTMmcQFoQoBTcAEfioHoXPcV/WB22Td1KVlzTPmeXvOa0YoWQtwsFglKhnL3IEPjjHI9+uFukzorktMdaI60hxHUlRCgFEA9061seu6py8+LS0NloWfDp7/f8L9MlIZ0P3PQF7P16+2ukNHNMMTG3ChLVwwmz3WK0tSqSwPxG47mOXWnGbdjt4Yl3F0thx9TQbbAQpaiSlRJ7JOu3ft6Vdtc5oJITZ4sV0jlZKLsNwuRl+NWPLbE/ZMgt7M6E8O6FjuhXuUk+qVD3KHcVhvmvjK88WZQypqQ+9annfMtdyQelaVpPUEKI10up1vY1sDqGtEJ33Uf5DxO2ZtiM/HLsgFmU2QhwAFTDg/EcT+6Se/9HoTVmhrXUz7H3TqFWraNtQ3k4aFQPw08qDkHGl2+6uJGRWtCUyuwH0lv0S+APTZ7KA9FfAEVblfPTErteOJuXG5EkFqTZ5yotwb0QHmOrTgHxCk6Wn+Qa+g8Z5qRHbkMrC2nUBaFA9lJI2DU9pUrYZA5nuuzCjs+pdNGWv8AebkV5KjeJXKbNvmQx5T5caiSw2wnpA6E6PbsO/21JKiGCflLlf8ADk/qNVIwCx56eYViQkSMHXyUvquMnzrJl5/Mw3Ccct90m22C3Mnuz5xjtpDhPlto6UKKlEJJ2dAdqseq3ynBcpRn8zM8GyO22uZc4TcO4M3GAqS2oNk+W4gpWkpUAojR2D2pBgucfLK97X8F0kxWyUZn8zX9y4Y5Bh49arK/drW7NfRks1cERnGnfLU3voO9+qew2O9e7+y9c4fIdkxy52q1rt05mAiTcoMxTrbcmWhzykoJSOptS2ykK7b2O1ejP4ayRm443PgZFab6/abU9CkLyeG7NEpx17zFOEeZsaPZI2ekdq6d34mn3iNfjMuFqiyblZbdFjfQoim2YcuIpa0OoR1dmwsp0newBrZq4fZfV+f4Vcb5cm78vZrGxiFkkPGrA5b5V4VZgHZ7qXRI+luMJPSGyOghCVE72Nnsdd/cyXlDMrNmkbEX7dhkO4fcVNykvXC8OMRgsvuN+W24W/aOkoV3APdXwryDiS9u8WWbFJV8guXCHkab1JlJYUG3dSlPqSlO9gnq18K9nkLjS/3rlD787RIxV5Bs6LaYl8ti5bYIdW55gCVp0faA38N/GgNNe1hx5+CES2v0/wDVzb5yvl8W6ZJGt1mxaQxjlujTZbr91W2Hw6x5pDJ6CFAdKgCdbHT8a72b8l3C0cbYzldtsrAkX2REZEW4vFlMfz0k+2oA66TrZ16bNcqdwnDvV2yq55CzYpj92tkWNb+iEQLc80wW1Lb2dpSVdJAB2Akd662U8cXbI+OsTxq7XeLNl2iZCkXCRJaU4malkacGid7WN+u/Xvuok012+F9eX5XgE9nfT5r0Z/JOWRHrBj7Vlx25ZPf5MlENEK6qVBaZYbSta3HSjq6va/FCT9dcy48z32La3oi8bt8fJYWRsWKZGdmqMVKnkFbbqXQnfSRre07HepJmXGCXLjj18wJ2141dsfekORWjACobwkISh0ONoKTshI9oHfb9Ecl8JT7lbVrvV8t9xulyyWNer0swiiO800no+jtt9R0OjttRO9ndesNKQC778/la31XrhNmB6y/KlvGGcXjI8kyPG77aIEWbYzHKpFulmRGdDqCoAKKUkKAHca99T+oJx9x+jC8xyObaHY0XHromOqLao7akIivISUuLA30+323oD071O6pz4MfY0y8s13ixBva1SlKVyXRKUpREpSlESlKURKUpREpSlESlKURKUpREpSlESlKURYL8St4kZNzlemWT1CK83bIqT+40CPtcUv8ATW2sEsEfFsMs+Oxh+Dt8NtjfvUoJHUo/Mq2T8zWFLGE3bxDQlLAcRJy9KyD6KSZnV+qvoLWztQ4I4ohoAsjZnbfLIdSUpSlYy11VfiRdaYs+IvvOIaaby23LcWtQCUpDhJJJ9APjXO8OuUYzbuL2Y9wyC0w3jdbkoNvTG0K0qa8pJ0T6EEEfEEV7Xigt1hvmG26x3zLrbjQenpfbemjYdS2k9aU9x30od++vgarLiV+1XeHkjfGON41ZIFnaQqXJyBBmyroghZKFnqAZbPQe+1Ab9B3FakbA+ksb6+HL78Lqi95ZUcMx4r3bNcIEznCP9DnRZPmchyH2w06lXU39xunrGj3T1AjfpvtWm6x3xRI4un57j2fW2dAwR6FJcE2xS3i6l9a2ylCo6tjoR+EPYjWxoAAbOxK57Qbhc0Z5C2fryXSlfjaTl4JSlKz1aWOfGzjqLdyJbsgZQlLV3g9DoA9XmVaKj9aFoH8itAeGq9G+cJ45IWsqcjRzCWSdnbKi2N/YkH7agPjohBzj2w3AfjR7wGj+9Wy7v+lCa8vgcmqe42vEFR2I14UpPyC2mzr9INbMv6uz2uP8SsmL9Ovc0fyF1f8AUQwT8pcr/hyf1GpfUQwT8pcr/hyf1Gs2L4b+g8wr8vxGdT5FS+uZld4j4/jNzvksgMQIrkhfzCUk6+3Wq6dUh4zcj+5PFSbK050P3uWhk6PfymyHF/Z7KUn99868p4t7K1nMqU8m6jc/kswR7ln95x++5YcnvgZt8hgzOie8EhUhagOnStABQ1r3AitgeGDJ3co4dtT0qQ5Im28qgSXHHCtalN66SonuSUFBJPxqleInMCa8OeRY/d8pssK837z3fJkSUJW2tI6WNgnt3QFfyq8vgYyTyMhvmKvK6EzY6Z7CD/ltkIWPrKVI+xBrbrmiaGSzbYDl09XWPRvMUrLuvjHPjqohyHJyu9eIm74vbMpusH6be/orGp7yWmurQHspV2A+Arsckcd8s8a4999LnIE2bHYeQh0xrnICm+pQCSUrOlDq0CPn6a3UW5FvLuO+Ji73+PEEx63376QiOVFPmlPTpOwCRv6jUi5P5mzPkvGVYmzg7kJqU62tz6Oh6S650KCkpSOga9oDfY+mqsYZf0sAGGwvey4F0ZEmInFc2tfwXu5jyZkeV+GuBcJVzlRrzb8iRBky4rqmFSE+Q4tKj0a7kEAj0JTvQ3oevxhxjyXn+HMZNbeRZcRh5x1sMyLhK6wULKT3B13IrwZxg92wjwxwWr6yY1xueTNzHIxIKmE/R3EISrX52k7Pw3r3V/HEfOV/wTBo+N23DEXVll15xMovuJ2VrKiNJbI7E69ahhduiaYD3jy08VIOG9AqCfdHPXwXS4az3PMK5lYwPKbvJuERycYEtmTIL/lOEaQ424ragNlHb0KT3APpMvGzmdwtEfH8dtNxlwXXi7NlORn1NLCEgIQklJB0SpZ1+4FQLhvFcx5E5wZzm7WiRCgJn/dGZJcYU02SkHy22urRWdhI7b0ASe+geVy3dbfmviXebutwjxbJHuLNvW+8sJbbjskebtR9Nq83/OFR3UbqoOsOy25tzUt69tMW3PadYX1svPx9fsr4/wCdbDAye/XSQw4qO3IRImOuNFuU0kpOlKI9lSxs/FBrRvinmTIPB97lQJciJIQ5G6XmHVNrTuQ2DpSSCOxIrP3i8uWK37KbLkGKX+23Fa4iosr6HIStTRbV1NqIB7bC1Df7mrV5iyIZZ4Qvvh2PMmRoK3hvfS6JDaXB9igoVxmZvHwTEWuQD812ifgZNEDewuPkngnuNyueDX9653GZPcRd+hK5Uhbqkp8ho6BUTobJ7fM1flZ58Cv5AZD/AB0f/Ds1e2S3WNYsduV7mKCY8CK5JdJ/yUJKj+qs6vb+5cBzV+id+3YTyWS+d8gyPMPEOnEsav1wgIbWzamksS3Gm/N7qcWoIUN6KyD8kV2fBrmN3Vm97xa+3SfMXJjh1hMuQt0tusqKVpBUTrYX3H7ioR4a7vY/2ZJWY5jeoFt8tuRMS5LeCOuS+rR6d+p0tyvBdb9ZsS8Tv30WK6RJln+64l/SIzwW35UgafGx8PMc7fIVtPhBY6mA0aM7cVkMmIc2oxauOV+HRXx4rOVbpg1ugWHG3BHu9zQtxcvpCjGZSQNpBBHUokgE+gBPrqqpxvhjl7MMfYyqRljkZ+W2H4zU25yC8pB7pJKdhGx3A9QCNgHtX546O/IVtIPrZho/9o5WtsVKTi9pKfxTCZ19XQKomQ0tLG6MC7r3Ku7v2mpe15Nm2sLrMHh55SzGyckI47ziXKmNPPrhJ+mOdb0OSneh5ncrSojp7k+qSDr15EO+X0+LxVuN8uphffKtv6MZrvldPf2ejq6dfLWqte4r8Pf7MZEtKTm/3Wb3pE7+/Np6PT8F69P7n4++s95s1f3/ABJ3pnFXFN3xd+eEFaVJSUud9Ha/ZHbfrVmEMle5wbhu3iLDqO5VpS+FrWl2KzuBztyK2NzU+/G4gy+RFfdjvtWaUtt1pZQtCg0ogpUO4I+IrOfhpvd7nYdyguberpKWxYwtlT8xxZaV5cjuglR6T2Hca9BXq5nZPEsxiN3eya6yHLIiE6q4JVLiKCmAg+YNJHUfZ36d68Xhc/Ivlb+IR/Vya5xU7YqV/aDsxp1C6SzukqWCxGR16Lu+CS83m55hkDdzvFynoRbWlITKluOhJ8w9wFE6Pzr2fGxmlyg3qxY3ZrpOhuMMLnShDkLaUsrPQ2klJG/xXO3zB+FcjwJ/lpkX8WNf1lRK83205j4n1Xe83CNEsiLwAqRIcCG0x434vc9tKLY1+/rqYh7c99smi/0XITO9jY2+bjb6rucRXzKcF8RUTGMnvtwmoU6bdKS/McdbCnWwttQCyRvq8sb+BNXl4t5s238J3CVb5kmHITMiBLsd5TawC+gEBSSD3FZ88Vd0sE/kyDlWGZBAnOvxW1OOQ3gssyGVewpWvQkFGv3lXN4lL2xknheRf42vKuCrfISB+b1PNkj7DsfZXKVmOWCUi17A9brtC/CyWK97adFnXDM1y7EMmxnKbje7xKtrrxeLTs911DzCXFMvApKiNjStA+/pNaT8YV0lxeIYM+0XKVFU7dY5S9FfW0pSFNuH1SQdHt2qmpmJfdrwh2XI47XXLsNxmOK0O5juSClz7AQhX1JNfuSZYMk8I9qt77vXNsd7YgOg+vlhtwtH6ughO/ik13lY2WVkgHuuwn55LhG90UT4ydW3H3WlPDtJkzOFcXkzJL8l9yISt15wrWs9au5Udk1Pqrvw1/4DMU/gZ/01VYlYFR8Z/U+a24fht6BK/lw6bUfka/qvFM39Ee16+WrW/qriF1Xz84K6p/NuKuL/ABnLql4/WOpf+qvoRXz88NYB5sxDf/1Sv6lyvoHWztr4zR3fcrJ2P8Jx70pSlYy1lQfjEu9mtNuxld4xOJkSXJEgNpfmvR/JISjZHln2t/P4Vnb78sIO98QWjuNH/fyZ3HwPerr8eG/oGIeuvPl7+vparMMCBPuKnU26BMmllPU6IzC3fLT8VdIOh8zX1GzYmGma4348SOPVfNbRne2pLWgcOAPBT20ZfhTt5gNo4jtDS1y2UpWL1MJSStIB1vvr117633XzMx4g5Fa9H0nMD/8AomvpnVHbMYYWW7+JPLmruyJHSNdi8rJSlKxVsKlfGe2F8LrUfVu5xlD9Kh/rqJ+BJ0m0ZUx+aJMdf2lCh/qqWeM9YRwupO/x7nGSP0qP+qof4Ef7xyw/89G/0XK2I/8AWu6/hZL/APYN6LTVRDBPylyv+HJ/Ual9RDBPylyv+HJ/Uazovhv6DzCvy/EZ1PkVL6yN4vY+VZVybDtdoxu+TYdripZadZt7y2VPPEKWQsJ6SNBsE77aO/Q1rmqKyzxG26wZ7NxNeLTZDsScmGX0yUJSokpHUBrevarvs8yNlxxtxEBcq0RujwSOsCvyN4XcAEdsPzr4p4IHmFMpABVruR7HpuqgtOLZJxd4i46rVYb9Ns0K5oaEpqC66lcR4AKJWlPSSlKzv5oq9+ZOcYPG2UsWKVj0q4qeiJkh1qQlAAKlJ1oj9z/TX8cQc82fkPLTjaLJKtclUZb7K3nkrS6UEbQNe/RJ+pJq1HNWCNz3jE0jmqz4qQyNY0hrgeCpa447kavFqLmMdvJgDKGnPpQt7pZ6OpPt9fT09Pz3qtlVB+aeRI3GmLxb7Jtj1xRInIhhppwIKSpDi+rZ934PX21wGuaYbnCznJn3BkiOiV9H+h+enrP4YNb6ta9Tuq85lqWscG5e6O9WIhFTue3FnqVyPGZbLndeMrdHtVsnXF5N4aWpuJHW8sJ8p3uQkE67jv8AOup4S4FwtvDEKJc4EyBITMlEsymFNLALqiD0qAOj61CGvFjZPNR5+IXFtrqHWsSkKKU+8613166rRQlMrgfTWVpeZU15qFIOwtOtgg/MUn30MAhkbbO915DuZZjMx18rLnZtdX7HiF2u8WI/MkRIjjrLDDSnHHXAk9KUpSCSSdDQrH/h/wCGpWa326DN7fkFtiRY6Vhx1hcdb7y1HuFOJ9rQSonX+UKvbhrnaByTlSrBGx2XbnBCXK81yQlY0lSB06A/d/0V0uXObsS48mC1yA/dbx0hS4UQp2yCNguqJ0jYIIHc6IOtd6nAainxQsb2ioTCnnwyvd2R8lWXLXhyx+ycf3O74kb3Mu0RKXWo6lh7zUhQ6wEJR1E9PURr3gVFsYYyt7wu5fiEvGr6iVEuEZ+Eyu2vBbjTj7alBAKdq6VJWo63oK71I2/FqsyQHMFSGd9ym6bXr6vK1/TVx8Sct4ryQ061aXHolyYR1vW+X0pdCd6606JC07IGx6bGwNirD31cMY3zb2IN7rgxlJNId061wRZZg4pyzlnje0TLZY8DuL7EuT9JcMqyylKC+hKO3TrtpI/pqZ5jn3J+X8L36BecNuDE2bPjwmWYlokJX5BSpx1akqCiU+wlG+w2vVS2T4mbbDy9eOT8Rnx3Gbl9AkOmSjTZDvlqXrQ7DufqFX+O42PSoVFQWPD5IgCc735LpTwNc0sZKSBl0WUOC/D7asnwg3nNGb5bZzspxDMf+91JaTpIKkLT1bKgo+7tquN4huC2cQiWiThcC+3dmUt1mY2GlSVtnQKDptOwkjrB2PXXxq0uRfEjZ8PzG646cbmT1W5wNrfakoSlSugKIAI9xOvrBq54tx/4PNXe4MmEPogkvtLVss+x1KST79d/0UdWVcUglfodBwXjaSlkYYm6jjxWbs84/wAj5V4YxPJYkGUxlNohqiS7fMaLDklKVdB7L1pW0dad6BCz37ioxjnLPNeH2BnFl4jLkLhthiO7Ms8hTqEjskezoL0NAH3gDufWpoPFnZlDqThlx0e43LQDr9FW3x1yNBzTjh/MocB6MI4kB2I44krSprZ1sdvaT0kfvqk980TLTRAtvl3X4LxrIZX3iks62duNlRXh44ozG6ciN8iZzGkw0MvrmITMQEyJchW/aKPVCUkk9wO4AA1XHh49kI8XKrocevIt/wB8q3PpZgO+T0d/a6+np6fnvVTBrxaWhbaV/eXcPaAP9+I/sr+v91laP2mXD/8AMR/ZXU+2l7nGPUW6BcgaNrWtEmhv1KuXmmPIl8RZdFiR3pMh6zSkNMstla3FFpQCUpAJJPwFZ08NeP5Bb8P5PbuFgu8NyTYwiOiRBdbU8ry5HsoCkjqPcdhs9x8asSx+I623TEsiyFGLTWm7GIpcaMlBLvnulsaOu2tbqT8I8vQ+UJN2Yi2STbTbUNLUXXkr6/MKwNaHbXR/TVRonp4HsLMri55aK04wTzMcHZ2Nlnzw/wAfLMNtGe3ZWLX5qZ9wUtwW3LY8FOvqX0oCQU7VoqBIHoBuv68PfCCsxeu72bW+/WmLES0iKFNKjLecV1FR/CJ2QAE+nvVV2cp+IPE8Ku71khxZF9ubBKX0RlpSyysfmLcP5w94SDr36PaoDC8WgVJAm4MUMfnKYuXWsfUC2B/TVwSVkrXPjjtitnfkqhZSROax774b5dea8HNfh6smN4BJvWHt324XKM81uN1eeXG1LCFdKEo6iR1A9vcDXIiMZPP8It0xR/G76m4Wu7sBhhdueDjrK5CXdpSU7UElSwdb0B3rSPGHImM8iWddwx6UsuMEJlRHwEvxyd660gnsdHSgSDo6PY6q/MPExbMcyq6WB3E50hdvlLjqdTKQAspOtgEdq4RT1T/0i3E5pvmu74aaP9UOwhwtlou74ZrA6vw/s2DIbZKiiS5NakRpTCml9C3VjulQBGwdj9NZWvWF59j8m94o1jt/lwxMSlxxq2PLQ+WSsNupUlJB2lZPY/nVsnhTlK2cn2u4SoUF63yID6W3ozrgWrpUnaVgj3HSh9aTXH5r5rg8Y32HapVhlXJUqIZIcafSgJHUU60R8q8gqJ46h7Qy5cb2+qTwQSQNcX2Ayv8ARdvw8RZcHhbGIk6JIiSW4hDjL7Sm3EHrV2KVAEH66n1erZ5guNoh3BLZbEphDwQTvp6khWt/bXtVlSOL3lx4labG4WgDglfjg22oD3g1+0qCkvn1wX/vZzji7ThALV1Ec/Wepv8AWa33d57FrtMy5yuv6PDYW+70J2rpQkqOh7zoV8/8nCsQ54muq0j7lZL9J79h0JkB0fZ0kVs/nG/TLPxncHrXj1xv7lwaVCS1BR1KbDragHVAAkpB16AnuPdsjc2ozeyRkfyHrzWNsx27ZI08CupxtnmO8g2Jy8Y3JddjtPlh1LzRbcbWAFaKT8lAg/OvayzMcWxOP5+R3+32xJHspffCVr+SUfjKPyANYXxn9lzGbNLtOP23LbXGmrS5IMW2vNuLUE9I9sI6k9vgRXEk4nnEqQqRKxfJ5D6/xnXrfIWtX1qKSTXv+JjLz2+z9V4dqvDBaMk/RTPJMrwJqfIfK8o5Alh9xxg32Ytm3MdZJ/BshRcUO4GlFIIAqP3Dk/NX0MsW26px2EwrqZg2Fv6BHQf3rfdX8sqrk/eZmP7UMi/mt/8A2afeZmP7UMi/mt//AGa12xwN1N+p9BZMk9S85AjoPRUhRyLHu7wOd4nar+sgbuMZP0C4ggjSvOa9lZGuwUn3etaA8O3I3Hdvt0y2uZ5e1SJkvzm28rkDzmfYSny0vbLahtOxog9/TdZe+8zMf2oZF/Nb/wDs0+8zMf2oZD/Nb/8As1xnpYJWYcVvH7fhdoKypidctv4L6QtuNuNB1txK21DYUk7BH11E8E5FxjNrreLdj0h+Su0uBuQ4popbUSpSQUKP4w2g9x7tH31ivEneYMUVrH4OYwmSNKjiA+thQ+bSklH26386tHwdjJMby+dZZ2GXtmNdGUqVMfjLZbjBoK9etIB2VAaB3vXYjesiXZrYo3uxXtp91rRbQMsjW4CL6qdeN90o4ktyAezt8ZSf+5eV/qrk+BRjWJ5NKI/HuLbYP71oH/zV4PHZc202HGLIF/hHZrswp/cttlA/pdqUeC+3GHw2Zik6Nwuch8H4hPS0P6s16ezs3qfXkojtbRy4BXZUQwT8pcr/AIcn9RqX1EME/KXK/wCHJ/Uazovhv6DzCvy/EZ1PkVL6wDy7/jDXz/rAj/TRW/qwDy7/AIw18/6wI/00Vo7G+I/oqO1fcZ1CmXjfJTyjCUPUWZsj/vHaimXw5PEnNcK4W5Kkx4zke5xEj8+O4Nrb/rW/qFSrxw/4UIX8TI/rHanHi/xMTuOMdzCMz1SLWhuNJUPXyHUjRPx04E/V1mr0EoZHCx2jgQqU8RdJM9urSCul40Jsa5cL4/cYTqXosq8xn2XEnYWhUZ9SSD8wRUFjf4jMn+Nf/WJqK33K1X3wsWqySF7lWHJWYqRvuWFR5Cmj9Q9pH8ipVG/xGZP8a/8ArE1BsRhiYw8HhTdKJZHvHFiqlGMGTw+vMI7O1wr6qDMUCf7k4y2ps6+S9j/tBWrfC3lxybhgQZLvXOsiVwXdnuWwnbSv8whP1oNQXws45Gy7gjNMblaDc+ctoK/yF+Q0ULHzSoA/ZUC8LmQSsT5WlY1cErZTd2nbdJbO/YktdZRv59QWj61ivar9wyRnFhuOnq68pf27438Hix6ry+Cx0McqSHlAkN2KQoge/S2TUM40gq5M5itbGQOuufducuTOUlZClJ6VOqSD6gaT0j3genoKl/g0Qpzk2Y2hJKlY/JAHxPW1Ub8LrqI/NmHl49I8xxvv20pUdxIH6TqrUnZfM4aho8iqzBijiadC4+YWypfEvGkm0KtasHsLbCkdAW1CQh1PzDgHWFfPe6xlibsrj/nyHGgyHVG25AIClE+06yX/AClBWtAkoP1br6B18+8gcFx8RElyH+FD+XJDXT+cfpgArM2U90gka43Flo7SY1hjc0WN13PFtj4snM9xdbQUM3eO3PSQNDqVttevn1Nkn998613xnkrd54nseTSnEguWpt6Ur0CVpR+E/QpKqp7xzWHz8ZsGTNN7XDmKhvKHubdSVAn5BTYH8qofx5myoHhEy+2qdKZEWS5bo+iN9EsJ7j6it39FSkYaqkiI1Bt9vwoxuFNVyA6EXVa4BDc5B5vtyZCS4LveVzZII/4vrU+sH+SCK1p4qci+97hi6tsuhuTdCm3M99HTh/Ca/wCzC6pTwQWAzM7u+QuIPlW2EGGjrt5jyv1hKD/nV7PjjyMSspseKsubRAjqmPpB7eY6elG/mEoV9i/nXWdu+rmRDRv9/hcoHGGifKdXf0oLxngDmRcOcg5GGAt+A2x9AV07UFNK85/XbfdvpT2+JqwPBBfGlz8lw2aUOR5rCZjTK+4UR+DdGvftKm/0V6vC/NmCYPxgxidzsl/mSHFPrnOMMsltwuKV2HU6DoI6U9wPSqt4Sv7OJcuY/dW3nRCbmfRnFOaSSw7tva/d2Cgo+vdNd5WSzMma8W4jw/r6rhG+KF8LmG/A+P8Aa1TzFxlx5aeKMmuFswqwQ5cW2POMPswW0rbUEHRSQNgiqF8I2PWLJuSrhbshs8G7REWdx5DMtlLqErDzQCgD79KI3861Pzx/gYy/+KZH+gazX4If8LVz/iN3+vYqlSSPNHKSTdXatrRWRCytbxG4fiuK8F5GvG8etloVKchpfMOMhouBMhHSFaHfWzr66qfwv3iRj+Gcp3yIdSYNlbfZOvRaUSCk/p1V6eLb/ATev+mi/wDiG6z1wI2t3izmFDaSpX3vJOh8kSCalSkvonYs+0PNqjU9mubb/k/dcnw1Yhbc55Vag5AhcyFHjOzpDSlH/wBoUlSQAs+pBUvZ+Ou/qa1hmHDnHl8xuVbGcRs9ueUyoR5MGG2w8yvXsqCkp3667HYPvBrN/grebb5jeQtQCnrO+lHzIcaOv0A/orZ8t1tiK6+6oJbbQpaifcANk1y2rNIyoAaSLAKey4mPp7uF7krCfhWvU2z822Nhlag1cvNhS20nspJbWofoWhJ/T8a8t0ssPI/FFcLBcAoxbhfZDDhT6p6gvSh8wdH7K5PhxSt/nXEi0gqJmOL0PgGHST+ipTaf8cdP/WV3/wA1ak3Zne4a4Pys+HtQMadMa8Hhnvs3Aub02C8EMJnOLtM5G9JS+lR8tXfX546R8nK73jqH/vAsh/8As6v61dej4w8XdxzlGPk9vCmGr0gPpcR26JTPSlRHwOvLV9fUa4/iXydvMkYVkiNBczHtvpB/EeS6tLifsWFCuUYEs8dQ3+QIPW3r5LrITFDJTngcuhK2jhf5HWX+L2P6tNdauThf5HWX+L2P6tNdavmX+8V9E3QJSlKivVinxl46bVyz91kt6j3uGh7q9xdbAbWP80Nn7auzDc2eyDwo3O8xprzd1tdglRH3m3Cl1uQxHICwoHYUR0LB9faFdLxSYK9mvGrrtuYLt2tCzMioSNqdSAQ42PmU9wPepKayxwtmbVl+7eK3SeYuP5VAct8mR09SYjjiChuTr3gdRCvTto79mt+ICrpG82H6f15LDefZap1/df5rjJ5F5CAH/DrJu3xub3+1X9nkvkMeuc5H/ODn9tcjK7BdcWyCTYr1HDEyOd9j1IdQd9DqD+chQGwfsOiCBevgVB+/PJjrt9zmf6xVadQ6KKEyhoNll07ZpJt0XEFVD+yXyJ+3nIv5wc/tr8PJnIY/+ecj/nBz+2vd58/w05b2P/xFfqPkKvfwJD/g7lJ7/wB+s/V/czXOeSOKn32AHTLr4LpDHLLUGHeHK+fTxWfP2S+RP285F/ODn9tDyXyGDr7+cj/nBz+2uHkYIyO679fpz+9/9IqtZ+EME8F3fQO/psrXb/mkV7VPjp4hJgB9dF5SslnlMe8It65rNH7JXIn7eci/nBz+2tD+DHJcjyGTk33ev1yugZRH8oS5KnQ3sub1s9t9v0CskRjqK0VHWkDe/qq5sVvF04m4ruclxxUXIMxZQm2xvR2NESFAy1/5JV1kISe/YH3HXldA18WBgFzaylQzvbLjeSWtvdcrxOZcjL+W7i9DUXYVrSLbG6e4X5aldah9bilAH3hKa2ZxLYF4vxpj1ieSEvxIDaZAH/KkdTn/AOxVWPPC7gTmZ8kRpchlRs9jUiZKWR7K3EkFpr6yodR+SCD6je66ytqvaxrKdn8Vq7Ma55fUO/klRDBPylyv+HJ/Ual9RDBPylyv+HJ/UazYvhv6DzCvy/EZ1PkVL6xPyfx9nM/nG83aFiN5kwHL2h5EhuKooUgKRtQPw7HvW2KVOlqnUzi5ovcWUammbUABx0N1lHxf4Xl+R8ixJlgxq6XSMm1IbU7GjlaQsLcPTse/RH6a0dd7BHyHj5/G7ihSWp1t+iugjSkFTet/Ig9/rFd5LrZdUyHEFxAClIB7gHeiR8Do/oNR17NrAxn0fBpD0hm9yoypMZtcZYbebSPaKXNdPb4Eg9qPqXyMYwD3V6ynax7n/wDSw49xfyjD+l21OH311kvBLpaiqLbqmyoJWPiO6tH4K+dXNHw7Kx4PJGNqx25i8quXmCCWD5xT9KSrfT8Onv8AVV+W3OMeuecXHDbc+/LutrQhc8NMKLUbrT1IC3NdOyN6AJPapLVubacr8OJoFiCqsWzY48VicxZUh4O8ev2OYPeYt/tE21vu3QuttymihS0eS2OoA+7YI+yqx8R3F+XMctu5Hhtkuc1i4BEzzYTRUY8hPZXp6ElKV/Wo/CtVZNe4ePWlVynNTHWQ6210xYy33CpawgeygE62Rs+4V064MrnsmMwGvBdX0THwiEnRZN8JWE5hjvKj0++4zdLZENqeaD0mOUI6y40QnZ9+gf0V6vOXA+UWvLJOT4HDen2+RJ+lJjxF9MiC4SFEpGwVJ6tlJT3T2Gu261sqXFS2p1UlkIS4G1KLg0FkhIST8dkDXxNeapnacu+3oGotbgoDZ0W53R4Z34rE7+e+ImdBNiLeS+2nylLbspQ8R6f3QNgg/MEH51NfDZwTe7bkkTMc0iCAIX4SDb1qCnVO+iXHNEhIT3IT670TrWjo/Kcgs+MWV68X2ciHCaKUlZSpSlKUdJQlKQVLUSQAlIJJOgK9Kz5ZDuN+TZF267W+cuKqY0iZEKEuNJUhKiFDaQQXEeySFd/T1qT697oy2NgaDrZeMoGh4dI4uI0uuZzjjjuVcT5FZozBkTFw1OxGwO632/bbSPmVJA+2sWNcecqN2qRbEYXkCYkl5p91v6Gr2lthYQfsDiv0/Kt159kkbD8OuuTzIkmXGtkdUh5qOUeYUJGzrrUkenu39Wz2rl2fOmrhnbGHrss6LNcsTd6cdcW2W221rCA32UVdfV1juAPYPc1GjrJKdhDWgjVSqqKOocHOJB0yUS8J+H3DEuMFC8QHoNzuM12Q+w8jpcbSNIQCPd2R1fyqoDPsE5Dz3mS4XF/E75FhXK6JZRJcjKCWowUltLhJ9AEJCq25SoxV745XSgZu+ilJQskibETkFXI4N4qA1950P/vHP9qs7+IPhe72/PFfeJidwkWSVEbWlEJpTiGHBtK077kb0Fdz+ca2dSo09fNC/Fe/VSnoopmYbW6Ksr+b/kvhtnIlWic3fpdgW09BW0Q8ZHQUqT0+vdQJHxBFVD4QsLy7HeTLhOv+N3S2RV2dxpDsmOUJUsvMkJBPv0CfsrVdK8ZWOZG+MDJy9fSNfI2QnNqrXxNWi6Xzhu7W2zwJE+a47HLbEdBWtWn0E6HyAJ+yq18HuGZDZJGWs5Tjk63x50eM0lMxgoS8NvBaRv17KG/rrSlKiyrcyAwgZHPy/COpWunExOYyWK8+4U5A4+y0XrCWZ0+Aw8XoMuAdyIo76QtG+o6B6dgEKG963qvVveV+IDMrW5jkuFkL0d9JbeaZs5jl5PvSpYQOx942ARvexutvUq0NqOIBkYHEcVXOzWgnA8tB1AWfvDDwrccOnry7LENNXZbJahw0qCzFSr8dS1AkFZGhoeg33O+0ItmEZijxUJyBeMXZNp++Bx76YYyvK8s9Wl9Xw+da4pXH/ISF7nuzLhbouvsMYY1jcg03VY+JrC3804smR7dGVJukBaZkJtCdqWpPZSAPeVIKgPnqsgyeNOUHYbcdzC8iW0wF+UgxFaR1HatfWe9fQylSpdoyUzMAAIUanZ8dQ/GSQVzMTZdj4taY77am3WoLKFoUNFKggAg/PddOlKoE3N1eAsEpSleL1KyX4neEpFtmTc5xCIp63PKU/coLSdqjKO1LeQPe2fUpH4p2R7O+nWlKsUtS+mfiaq9TTMqGYHr5841lVmu+PxcPz7z12yKkptF4jo65Np2AAjpH92j/ABbOyPzfRPTO+OOFeQ5j1wOPZoxbbWQ25HuVvmuGPcUnq0U+UoEKTrulY2Cr3+psfmnw4wL8/IvuDLYtVycJcegL9mNIUdklJH9zUT8PZPwGyazxDn8kcQ39bLa7pjksr2tlxALEj56O23PT8YbPzFfQsmbUsPs7gCeB9f8AnisJ8ToHj2hpIHEcu9c/k+0Xaw57dbLfLsu73CG4ht6Yta1l0+WkjuslXYEDv8Kn/BHHmc5rjc6ZjGcv2CJFmFlyOmQ+gKX0JV16bUB6ED49q4l15BxXLLm5cc5wFt25P9P0i5Wa4ORXXCAB1KaV1IUdADfarG4c5k4v45sk612235g41LkmUr6WmO4pKuhKekFCk9tJHqPfU53ziDC1nay5ELnAyDflxeMJvxIKoLKY0uFk91gz5apkuNNeYfkKUVF1aFlKl7Pc7IJ796uDhjjDkHLsFavGO8gSLLbw+60iGiTISEqSr2iAhQSNk77fGoxkV64fl3243pFkza5yJsp2UtmRNjxmepxZWQChKlgbOvea/XeaMjtuNDGsKhxMPs6VKUERFrfkEqO1EvO7Oz8QAfhqpymaWMNjFjzNrevBQiEEUhdI647r3Xs2/H7TxqEZDyGy1ccnUA/bsZLgWULOil+YtJISAe4b7lXz76isCJl3K/IhbSpy53u5udbzqhptlsEAqPuQ0gEDQ+QGyRvr8Z8U5tyTcPpkaO9HgOr65F3nhXQvfqUk+06r6u3xUK2bxVxzjnHVj+59kYK5DoBlzXQC9JUPeo+4DvpI7DZ95JNaprGU1zfE/wCg9fMqzT0j6mwthjHzK83FWDWrj3Do2P2wBak/hZckp0qS+QApw/DegAPcAB7qldKV8297nuLnHMr6FrQ0Bo0Solgza0ZHlKlIUkKnJKSRrfY+lS2letfhaRzXjmYnB3JKoC+XzLrtyPbW1WvK0eRmRikRUONRmYDTBUN90odDqh1KWrqCQenY7A3/AEr2N+C+S9c26qnhq2OnkLkTIJ1uvTEh+9LjRn5bjwZXFbQgJS2hatKHWHFBQToBeknWxUW5Cbv19y+2ZZitslP3S1ZdHhMCTEeZSYS4qm1uErQNth1bqiU7BCRo7Iq/6VMT2cXW7l5gyss4WKTe8Uncv3qwWi6S7lGt0ZNpdkWx5P09bTJ8x/ugBw+c4tRA7q767d6/mVPy9Fl5QmWNGcMOC2QmbQ7K8wqdkqRtTraXNltS1Op6kpQnoCPzD2GkaVL2jO9uX0t+F5u+9VFlNsyiwIwm3RL3lF1k3DImHbw6wNp8lEclaTofgmSptHbqH452VH19HGp2TXXkbIpl7dySO5Z5s5pq3x4zyIj0LygGNunTat66x5YLvWobIQNVddKgJsswvcCy3j2KzXONeKLHPx/MFquV4cn31tUiUhzrDTjhUv8ACjygXihQKik7BXrqUSZFld9y645+xDTa8tR9EzJiHH+hIdbYRb22A4VKO0oe81YV1KUSEp0CU9urQVKmakk3I5/VebscFVPPlouEm9YDkDcCTcLRYb+mZcmI7JdcQnoUlD4QnaldCjshIJ77A7V0OQcyuT+DZRLwK3zplygW8KjTUwipBWs9/JSofhlISOvSQU76U9ztIsalcxJkARopFqzlkkPKJHH2ZRYca/3ew3i7WyLa2ZAdfkOtrUz9MdSHfbS2o9fZWk9iRpJBrrZLJyyBkvK+SY5YLt90oePw4VpcMUKQVNoW4oN/8qtJf3pIUCUa3s6q96VPf93rL8LzB3qgr1dLjjvGLWQ/fDevuHLyCM9dVXLzIbwhuAJcajGQoOoCnenZWpPYuFHSNVzJEHLLFj+J43Ku96kW+/Nz5FwulrdmXJaZCiDEZQ42vrSlCFaCtpQot9Su3Vu6cww5rIrpbrom8XK2yoKHW0mOGnG3G3AAtK23kLQd6HtABQGwDokHpYlj1qxawRrFZIqYsGP1lttPYbWorUe3YbUpR0NDv2AFS34AUcGa921tOM2yKy86+662yhK1vlJcUQkAlXT7PUffrtv0r2KUqquqUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIleneLVa7zBXBu9uiXCKsaUzJZS4g/YoEV7lKA2zCEXVOZL4beMrspTkOJcLI4r3wJOkj6kOBSQPqAqIPeEyylR8jNLolO+wcitqP6RqtJUq4yvqWCweVVdRU7zcsCznB8J2NodBnZde32/ellplon7SlVWHiPBvGeNuofYxxqfJbIUl64qMggj3hKvZB+oCrJpUZK2okFnPK9jo4IzdrQvxCUoSEISEpA0ABoAV+0pVVWUpSlESlKURKUpREpSlESlKURKUpREpSlESlKURKUpREpSlESlKURKUpREpSlESlKURKUpREpSlESlKURf/2Q==" alt="Center for Appalachian Innovation" style="height:64px;object-fit:contain;flex-shrink:0;filter:brightness(1.1)">
+  <div class="header-divider" style="width:1px;height:56px;background:var(--border);flex-shrink:0"></div>
+  <div class="header-title">
+    <h1>Healthcare Provider Dashboard</h1>
+    <p>Appalachian Ohio · 32 Counties · 2019–2025</p>
+  </div>
+  <div class="county-selector-wrap" style="margin-left:0">
+    <label>County</label>
+    <select id="countySelect" onchange="setCounty(this.value)"></select>
+  </div>
+</header>
+
+<div class="stats-bar" id="statsBar"></div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('heatmap',this)">Heatmap</div>
+  <div class="tab" onclick="switchTab('trends',this)">Trends</div>
+  <div class="tab" onclick="switchTab('breakdown',this)">Year View</div>
+  <div class="tab" onclick="switchTab('growth',this)">Growth</div>
+  <div class="tab" onclick="switchTab('compare',this)">Compare Counties</div>
+  <div class="tab" onclick="switchTab('region',this)">Region Overview</div>
+</div>
+
+<div id="heatmap" class="panel active">
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div class="card-title" style="margin-bottom:0">Specialty × Year — Heatmap</div>
+      <div style="display:flex;gap:6px">
+        <button id="sortAmount" onclick="setHeatSort('amount')" style="font-family:'DM Sans',sans-serif;font-size:0.72rem;padding:4px 12px;border-radius:4px;border:1px solid var(--cai-blue);background:var(--cai-blue);color:var(--text);cursor:pointer;transition:all .2s">Sort by Amount</button>
+        <button id="sortAlpha" onclick="setHeatSort('alpha')" style="font-family:'DM Sans',sans-serif;font-size:0.72rem;padding:4px 12px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .2s">Sort A–Z</button>
+      </div>
+    </div>
+    <div class="heatmap-scroll">
+      <table class="hm" id="hmTable"></table>
+    </div>
+  </div>
+</div>
+
+<div id="trends" class="panel">
+  <div class="filter-row">
+    <span class="filter-label">Top</span>
+    <input type="range" id="topNSlider" min="3" max="12" value="6" oninput="updateTopN(this.value)">
+    <span class="topn-lbl" id="topNLbl">6</span>
+    <span class="filter-label">specialties by total</span>
+  </div>
+  <div class="card">
+    <div class="card-title">Year-over-Year Trends</div>
+    <canvas id="lineChart"></canvas>
+  </div>
+</div>
+
+<div id="breakdown" class="panel">
+  <div class="filter-row">
+    <span class="filter-label">Year:</span>
+    <select class="inline-sel" id="yearSel" onchange="updateBar()">
+      <option>2019</option><option>2020</option><option>2021</option>
+      <option>2022</option><option>2023</option><option>2024</option>
+      <option value="2025" selected>2025</option>
+    </select>
+  </div>
+  <div class="card">
+    <div class="card-title">Provider Count by Specialty</div>
+    <canvas id="barChart"></canvas>
+  </div>
+</div>
+
+<div id="growth" class="panel">
+  <div class="card">
+    <div class="card-title">Net Change 2019 → 2025 by Specialty</div>
+    <canvas id="growthChart"></canvas>
+  </div>
+</div>
+
+<div id="compare" class="panel">
+  <div class="filter-row">
+    <span class="filter-label">Compare with:</span>
+    <select class="inline-sel" id="cmpSelect" onchange="updateCompare()"></select>
+  </div>
+  <div class="compare-grid">
+    <div class="card" id="cmpCard1">
+      <div class="card-title" id="cmpTitle1">—</div>
+      <canvas id="cmpChart1"></canvas>
+    </div>
+    <div class="card" id="cmpCard2">
+      <div class="card-title" id="cmpTitle2">—</div>
+      <canvas id="cmpChart2"></canvas>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Side-by-Side Total Providers</div>
+    <canvas id="cmpBarChart"></canvas>
+  </div>
+</div>
+
+<div id="region" class="panel">
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+      <div class="card-title" style="margin-bottom:0">All 32 Counties — Provider Comparison</div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--muted)">FROM</span>
+          <select id="regionYearA" onchange="buildRegionTable()" style="font-family:'DM Mono',monospace;font-size:0.72rem;background:var(--surface2);color:var(--text);border:1px solid var(--cai-blue);border-radius:4px;padding:4px 8px;cursor:pointer">
+            <option value="0">2019</option><option value="1">2020</option><option value="2">2021</option>
+            <option value="3">2022</option><option value="4">2023</option><option value="5">2024</option>
+            <option value="6">2025</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--muted)">TO</span>
+          <select id="regionYearB" onchange="buildRegionTable()" style="font-family:'DM Mono',monospace;font-size:0.72rem;background:var(--surface2);color:var(--text);border:1px solid var(--cai-blue);border-radius:4px;padding:4px 8px;cursor:pointer">
+            <option value="0">2019</option><option value="1">2020</option><option value="2">2021</option>
+            <option value="3">2022</option><option value="4">2023</option><option value="5">2024</option>
+            <option value="6" selected>2025</option>
+          </select>
+        </div>
+        <span style="font-family:'DM Mono',monospace;font-size:0.6rem;color:var(--muted)">· Click headers to sort</span>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="region-table" id="regionTable"></table>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Region-Wide Totals by Year</div>
+    <canvas id="regionLineChart"></canvas>
+  </div>
+</div>
+
+<script>
+const YEARS = [2019,2020,2021,2022,2023,2024,2025];
+const PALETTE = ['#4a9fd4','#5bc4a0','#7ab8e8','#e07b5c','#a78bfa','#60d0f0','#f0a050','#3db88a','#f47290','#e8cc40','#88a8c8','#80c0e0'];
+
+// ── INLINE DATA ──
+const ALL_DATA = {"Adams County": {"totals": [24, 42, 43, 57, 47, 44, 42], "specialties": {"ANESTHESIOLOGY": [0, 0, 0, 0, 0, 0, 1], "CARDIOVASCULAR DISEASE (CARDIOLOGY)": [0, 1, 2, 0, 0, 0, 1], "CERTIFIED REGISTERED NURSE ANESTHETIST (CRNA)": [0, 0, 1, 1, 1, 2, 2], "CHIROPRACTIC": [4, 4, 4, 4, 4, 4, 4], "CRITICAL CARE (INTENSIVISTS)": [0, 0, 0, 1, 0, 0, 0], "DIAGNOSTIC RADIOLOGY": [4, 3, 2, 2, 2, 2, 2], "EMERGENCY MEDICINE": [1, 3, 4, 7, 6, 5, 6], "FAMILY MEDICINE": [1, 4, 4, 0, 0, 0, 0], "FAMILY PRACTICE": [0, 0, 0, 5, 5, 4, 4], "GASTROENTEROLOGY": [0, 1, 0, 0, 1, 1, 0], "GENERAL SURGERY": [0, 2, 3, 2, 0, 0, 0], "HEMATOLOGY/ONCOLOGY": [1, 1, 1, 0, 1, 1, 1], "INTERNAL MEDICINE": [4, 5, 5, 4, 3, 3, 2], "INTERVENTIONAL CARDIOLOGY": [0, 0, 1, 1, 0, 0, 0], "MENTAL HEALTH COUNSELOR": [0, 0, 0, 0, 0, 1, 0], "NURSE PRACTITIONER": [3, 13, 12, 24, 20, 17, 16], "OBSTETRICS/GYNECOLOGY": [1, 1, 0, 0, 0, 0, 0], "OPTOMETRY": [1, 0, 0, 0, 0, 0, 0], "ORTHOPEDIC SURGERY": [0, 0, 0, 0, 2, 1, 1], "PAIN MANAGEMENT": [0, 0, 0, 1, 0, 0, 0], "PHYSICAL MEDICINE AND REHABILITATION": [0, 0, 0, 0, 0, 1, 1], "PHYSICAL THERAPIST IN PRIVATE PRACTICE": [0, 0, 0, 0, 0, 1, 0], "PHYSICAL THERAPY": [1, 1, 1, 1, 1, 0, 0], "PHYSICIAN ASSISTANT": [0, 1, 1, 2, 0, 0, 0], "PODIATRY": [0, 0, 1, 1, 0, 0, 0], "PSYCHIATRY": [1, 2, 1, 1, 0, 0, 0], "RADIATION ONCOLOGY": [0, 0, 0, 0, 1, 1, 1], "UROLOGY": [2, 0, 0, 0, 0, 0, 0]}}, "Ashtabula County": {"totals": [726, 514, 556, 581, 610, 786, 800], "specialties": {"ADDICTION MEDICINE": [1, 1, 1, 2, 3, 4, 3], "ALLERGY/IMMUNOLOGY": [1, 1, 0, 0, 1, 1, 1], "ANESTHESIOLOGY": [16, 8, 7, 9, 25, 46, 47], "ANESTHESIOLOGY ASSISTANT": [13, 2, 4, 10, 25, 50, 45], "CARDIAC ELECTROPHYSIOLOGY": [2, 0, 0, 2, 1, 5, 5], "CARDIAC SURGERY": [1, 0, 0, 0, 0, 0, 0], "CARDIOVASCULAR DISEASE (CARDIOLOGY)": [15, 6, 8, 20, 7, 23, 25], "CERTIFIED CLINICAL NURSE SPECIALIST (CNS)": [2, 2, 2, 2, 3, 3, 3], "CERTIFIED NURSE MIDWIFE (CNM)": [7, 8, 5, 3, 1, 0, 0], "CERTIFIED REGISTERED NURSE ANESTHETIST (CRNA)": [17, 19, 26, 27, 35, 53, 51], "CHIROPRACTIC": [14, 14, 12, 14, 23, 16, 14], "CLINICAL PSYCHOLOGIST": [0, 0, 0, 2, 4, 5, 5], "CLINICAL SOCIAL WORKER": [8, 8, 7, 6, 5, 8, 11], "CRITICAL CARE (INTENSIVISTS)": [0, 0, 1, 3, 1, 5, 4], "DERMATOLOGY": [2, 2, 1, 1, 1, 1, 0], "DIAGNOSTIC RADIOLOGY": [19, 5, 14, 19, 31, 18, 13], "EMERGENCY MEDICINE": [20, 15, 16, 18, 19, 19, 19], "ENDOCRINOLOGY": [4, 5, 4, 6, 4, 6, 6], "FAMILY MEDICINE": [104, 93, 94, 0, 0, 0, 0], "FAMILY PRACTICE": [0, 0, 0, 97, 98, 101, 107], "GASTROENTEROLOGY": [13, 8, 9, 10, 7, 15, 16], "GENERAL PRACTICE": [2, 2, 2, 2, 2, 2, 2], "GENERAL SURGERY": [16, 14, 9, 13, 9, 19, 19], "GERIATRIC MEDICINE": [0, 0, 0, 0, 2, 0, 1], "GYNECOLOGICAL ONCOLOGY": [1, 1, 0, 0, 0, 0, 0], "HAND SURGERY": [0, 1, 0, 0, 0, 0, 0], "HEMATOLOGY": [1, 0, 0, 0, 0, 0, 0], "HEMATOLOGY/ONCOLOGY": [8, 6, 6, 4, 3, 5, 4], "HOSPITALIST": [34, 16, 23, 17, 9, 8, 6], "INFECTIOUS DISEASE": [1, 0, 0, 0, 0, 0, 0], "INTERNAL MEDICINE": [106, 62, 62, 55, 48, 66, 64], "INTERVENTIONAL CARDIOLOGY": [1, 0, 3, 1, 1, 6, 6], "INTERVENTIONAL PAIN MANAGEMENT": [1, 0, 0, 0, 0, 0, 0], "INTERVENTIONAL RADIOLOGY": [1, 0, 0, 1, 1, 0, 0], "MARRIAGE AND FAMILY THERAPIST": [0, 0, 0, 0, 0, 0, 1], "MEDICAL ONCOLOGY": [0, 1, 2, 1, 1, 0, 0], "MENTAL HEALTH COUNSELOR": [0, 0, 0, 0, 0, 13, 12], "NEPHROLOGY": [2, 1, 2, 1, 0, 1, 2], "NEUROLOGY": [10, 7, 7, 9, 9, 15, 8], "NURSE PRACTITIONER": [90, 78, 90, 91, 107, 126, 141], "OBSTETRICS/GYNECOLOGY": [26, 17, 21, 17, 17, 12, 12], "OCCUPATIONAL THERAPIST IN PRIVATE PRACTICE": [0, 0, 0, 0, 0, 0, 1], "OCCUPATIONAL THERAPY": [1, 1, 1, 1, 0, 0, 0], "OPHTHALMOLOGY": [3, 2, 2, 2, 1, 1, 1], "OPTOMETRY": [5, 3, 2, 2, 2, 1, 2], "ORTHOPEDIC SURGERY": [8, 7, 6, 5, 5, 11, 13], "OTOLARYNGOLOGY": [8, 6, 6, 5, 5, 4, 3], "PAIN MANAGEMENT": [1, 2, 3, 3, 3, 3, 5], "PATHOLOGY": [6, 0, 0, 0, 0, 0, 0], "PEDIATRIC MEDICINE": [3, 4, 3, 5, 5, 4, 4], "PERIPHERAL VASCULAR DISEASE": [1, 1, 1, 1, 1, 1, 1], "PHYSICAL MEDICINE AND REHABILITATION": [1, 1, 1, 2, 1, 4, 4], "PHYSICAL THERAPIST IN PRIVATE PRACTICE": [0, 0, 0, 0, 0, 13, 13], "PHYSICAL THERAPY": [17, 15, 17, 15, 9, 0, 0], "PHYSICIAN ASSISTANT": [50, 26, 31, 40, 44, 53, 62], "PLASTIC AND RECONSTRUCTIVE SURGERY": [3, 3, 1, 1, 1, 1, 1], "PODIATRY": [14, 9, 4, 3, 4, 5, 6], "PSYCHIATRY": [15, 11, 10, 10, 6, 6, 6], "PSYCHOLOGIST, CLINICAL": [2, 3, 3, 0, 0, 0, 0], "PULMONARY DISEASE": [5, 1, 3, 5, 4, 7, 5], "QUALIFIED AUDIOLOGIST": [5, 4, 6, 5, 6, 7, 6], "QUALIFIED SPEECH LANGUAGE PATHOLOGIST": [0, 0, 0, 0, 0, 0, 2], "RADIATION ONCOLOGY": [4, 3, 3, 2, 1, 1, 1], "REGISTERED DIETITIAN OR NUTRITION PROFESSIONAL": [1, 1, 1, 1, 0, 0, 0], "RHEUMATOLOGY": [2, 1, 1, 0, 0, 0, 0], "SLEEP MEDICINE": [0, 1, 2, 1, 1, 1, 1], "SPORTS MEDICINE": [0, 0, 1, 0, 1, 2, 2], "SURGICAL ONCOLOGY": [1, 1, 1, 1, 1, 0, 0], "UROLOGY": [9, 4, 7, 7, 5, 7, 6], "VASCULAR SURGERY": [2, 1, 2, 1, 1, 2, 2]}}, "Athens County": {"totals": [194, 246, 243, 252, 208, 244, 247], "specialties": {"ADDICTION MEDICINE": [1, 1, 1, 1, 1, 1, 1], "ANESTHESIOLOGY": [1, 1, 2, 2, 2, 1, 1], "CARDIOVASCULAR DISEASE (CARDIOLOGY)": [0, 1, 0, 1, 1, 0, 0], "CERTIFIED CLINICAL NURSE SPECIALIST (CNS)": [1, 1, 1, 1, 1, 1, 0], "CERTIFIED NURSE MIDWIFE (CNM)": [0, 1, 1, 1, 1, 1, 2], "CERTIFIED REGISTERED NURSE ANESTHETIST (CRNA)": [1, 8, 6, 8, 6, 5, 2], "CHIROPRACTIC": [4, 4, 4, 4, 4, 4, 5], "CLINICAL PSYCHOLOGIST": [0, 0, 0, 6, 6, 6, 6], "CLINICAL SOCIAL WORKER": [15, 13, 15, 21, 13, 12, 18], "DERMATOLOGY": [1, 2, 2, 1, 1, 2, 3], "DIAGNOSTIC RADIOLOGY": [0, 6, 5, 4, 0, 1, 1], "EMERGENCY MEDICINE": [6, 7, 6, 6, 5, 7, 4], "ENDOCRINOLOGY": [1, 1, 1, 2, 2, 1, 1], "FAMILY MEDICINE": [25, 27, 27, 0, 0, 0, 0], "FAMILY PRACTICE": [0, 0, 0, 31, 27, 31, 29], "GENERAL SURGERY": [4, 5, 5, 4, 5, 4, 5], "GERIATRIC MEDICINE": [2, 1, 1, 1, 2, 2, 2], "HEMATOLOGY": [0, 0, 0, 0, 0, 1, 0], "HEMATOLOGY/ONCOLOGY": [1, 0, 1, 1, 0, 1, 1], "HOSPITALIST": [1, 2, 2, 2, 2, 3, 1], "INTERNAL MEDICINE": [12, 24, 21, 19, 15, 15, 14], "MEDICAL ONCOLOGY": [0, 0, 0, 1, 0, 0, 0], "MENTAL HEALTH COUNSELOR": [0, 0, 0, 0, 0, 9, 9], "MICROGRAPHIC DERMATOLOGIC SURGERY (MDS)": [0, 0, 0, 0, 0, 1, 2], "NEPHROLOGY": [0, 0, 2, 2, 0, 0, 0], "NEUROLOGY": [1, 1, 5, 3, 2, 3, 3], "NURSE PRACTITIONER": [42, 51, 50, 52, 46, 60, 66], "OBSTETRICS/GYNECOLOGY": [6, 8, 9, 10, 7, 8, 9], "OPHTHALMOLOGY": [2, 2, 2, 2, 2, 1, 2], "OPTOMETRY": [9, 7, 6, 8, 9, 8, 5], "ORTHOPEDIC SURGERY": [3, 6, 6, 5, 4, 5, 4], "OSTEOPATHIC MANIPULATIVE MEDICINE": [5, 5, 1, 1, 1, 4, 3], "OTOLARYNGOLOGY": [0, 0, 0, 1, 1, 1, 2], "PAIN MANAGEMENT": [2, 2, 2, 2, 1, 3, 3], "PATHOLOGY": [1, 1, 2, 1, 1, 1, 0], "PEDIATRIC MEDICINE": [0, 0, 3, 1, 0, 0, 0], "PHYSICAL MEDICINE AND REHABILITATION": [1, 1, 1, 2, 2, 2, 2], "PHYSICAL THERAPIST IN PRIVATE PRACTICE": [0, 0, 0, 0, 0, 11, 10], "PHYSICAL THERAPY": [11, 12, 8, 7, 5, 0, 0], "PHYSICIAN ASSISTANT": [7, 12, 11, 9, 9, 3, 3], "PLASTIC AND RECONSTRUCTIVE SURGERY": [0, 1, 0, 0, 0, 0, 0], "PODIATRY": [3, 3, 3, 3, 3, 5, 5], "PSYCHIATRY": [7, 10, 9, 9, 8, 8, 8], "PSYCHOLOGIST, CLINICAL": [7, 6, 5, 0, 0, 0, 0], "PULMONARY DISEASE": [0, 0, 4, 2, 2, 1, 1], "QUALIFIED AUDIOLOGIST": [5, 7, 8, 9, 6, 7, 9], "QUALIFIED SPEECH LANGUAGE PATHOLOGIST": [3, 1, 1, 2, 2, 0, 2], "RADIATION ONCOLOGY": [1, 2, 2, 2, 1, 2, 2], "REGISTERED DIETITIAN OR NUTRITION PROFESSIONAL": [1, 2, 1, 1, 1, 1, 0], "UROLOGY": [1, 1, 1, 1, 1, 1, 1]}}, "Belmont County": {"totals": [236, 186, 235, 228, 268, 241, 238], "specialties": {"ADVANCED HEART FAILURE AND TRANSPLANT CARDIOLOGY": [0, 0, 0, 0, 1, 1, 1], "ALLERGY/IMMUNOLOGY": [1, 0, 0, 0, 0, 0, 0], "ANESTHESIOLOGY": [8, 7, 9, 9, 8, 7, 6], "CARDIAC ELECTROPHYSIOLOGY": [0, 0, 0, 0, 1, 0, 0], "CARDIAC SURGERY": [2, 2, 2, 1, 2, 2, 2], "CARDIOVASCULAR DISEASE (CARDIOLOGY)": [6, 4, 3, 5, 6, 6, 5], "CERTIFIED REGISTERED NURSE ANESTHETIST (CRNA)": [18, 11, 21, 23, 26, 20, 16], "CHIROPRACTIC": [9, 9, 8, 8, 7, 8, 7], "CLINICAL PSYCHOLOGIST": [0, 0, 0, 1, 1, 1, 1], "CLINICAL SOCIAL WORKER": [10, 9, 6, 6, 3, 5, 6], "COLORECTAL SURGERY (PROCTOLOGY)": [0, 1, 1, 0, 0, 0, 0], "DERMATOLOGY": [0, 0, 0, 1, 0, 0, 0], "DIAGNOSTIC RADIOLOGY": [18, 11, 15, 17, 19, 18, 25], "EMERGENCY MEDICINE": [8, 4, 9, 8, 12, 7, 3], "FAMILY MEDICINE": [18, 15, 16, 0, 0, 0, 0], "FAMILY PRACTICE": [0, 0, 0, 13, 16, 11, 9], "GASTROENTEROLOGY": [7, 3, 3, 4, 5, 3, 3], "GENERAL PRACTICE": [2, 1, 1, 1, 1, 1, 1], "GENERAL SURGERY": [5, 3, 4, 5, 5, 5, 3], "HAND SURGERY": [0, 0, 0, 0, 0, 1, 1], "HEMATOLOGY/ONCOLOGY": [2, 0, 0, 0, 0, 0, 0], "HOSPITALIST": [0, 1, 3, 0, 1, 1, 0], "INFECTIOUS DISEASE": [2, 0, 1, 1, 1, 1, 1], "INTERNAL MEDICINE": [14, 14, 13, 9, 14, 11, 8], "INTERVENTIONAL CARDIOLOGY": [0, 0, 2, 5, 3, 3, 4], "INTERVENTIONAL PAIN MANAGEMENT": [1, 0, 0, 0, 0, 0, 0], "MEDICAL ONCOLOGY": [2, 0, 0, 0, 0, 0, 0], "MENTAL HEALTH COUNSELOR": [0, 0, 0, 0, 0, 5, 7], "NEPHROLOGY": [5, 4, 4, 0, 4, 4, 3], "NEUROLOGY": [2, 1, 1, 2, 1, 1, 1], "NEUROSURGERY": [0, 1, 1, 0, 1, 1, 1], "NURSE PRACTITIONER": [34, 23, 40, 44, 51, 41, 49], "OBSTETRICS/GYNECOLOGY": [4, 2, 2, 4, 4, 3, 1], "OCCUPATIONAL THERAPY": [0, 2, 2, 0, 0, 0, 0], "OPHTHALMOLOGY": [1, 1, 1, 1, 1, 3, 3], "OPTOMETRY": [8, 8, 9, 9, 9, 8, 7], "ORTHOPEDIC SURGERY": [8, 4, 5, 6, 5, 5, 6], "OTOLARYNGOLOGY": [0, 0, 2, 2, 2, 2, 2], "PAIN MANAGEMENT": [1, 1, 1, 1, 2, 3, 3], "PATHOLOGY": [2, 0, 0, 0, 2, 1, 0], "PHYSICAL MEDICINE AND REHABILITATION": [1, 1, 1, 1, 1, 2, 1], "PHYSICAL THERAPIST IN PRIVATE PRACTICE": [0, 0, 0, 0, 0, 16, 15], "PHYSICAL THERAPY": [7, 14, 19, 20, 17, 0, 0], "PHYSICIAN ASSISTANT": [8, 9, 11, 4, 15, 14, 11], "PLASTIC AND RECONSTRUCTIVE SURGERY": [1, 1, 1, 1, 1, 1, 2], "PODIATRY": [6, 6, 5, 5, 8, 6, 8], "PSYCHIATRY": [3, 3, 4, 4, 3, 4, 4], "PSYCHOLOGIST, CLINICAL": [2, 2, 2, 0, 0, 0, 0], "PULMONARY DISEASE": [5, 3, 2, 2, 4, 3, 2], "QUALIFIED AUDIOLOGIST": [3, 3, 3, 3, 3, 4, 4], "REGISTERED DIETITIAN OR NUTRITION PROFESSIONAL": [0, 0, 0, 0, 1, 1, 1], "SLEEP MEDICINE": [0, 0, 0, 0, 1, 1, 0], "SPORTS MEDICINE": [0, 0, 0, 1, 0, 0, 0], "THORACIC SURGERY": [2, 2, 2, 1, 0, 0, 0], "UROLOGY": [0, 0, 0, 0, 0, 0, 1], "VASCULAR SURGERY": [0, 0, 0, 0, 0, 0, 4]}}, "Brown County": {"totals": [32, 41, 46, 52, 44, 55, 63], "specialties": {"ADDICTION MEDICINE": [1, 1, 1, 1, 1, 1, 1], "ANESTHESIOLOGY": [0, 0, 1, 1, 0, 0, 0], "CARDIOVASCULAR DISEASE (CARDIOLOGY)": [1, 1, 1, 3, 2, 2, 2], "CHIROPRACTIC": [2, 2, 2, 2, 2, 2, 2], "CLINICAL SOCIAL WORKER": [1, 3, 3, 3, 3, 4, 4], "FAMILY MEDICINE": [6, 5, 3, 0, 0, 0, 0], "FAMILY PRACTICE": [0, 0, 0, 4, 5, 7, 8], "GENERAL PRACTICE": [0, 0, 0, 1, 1, 1, 1], "INTERVENTIONAL CARDIOLOGY": [0, 0, 0, 1, 1, 1, 1], "MENTAL HEALTH COUNSELOR": [0, 0, 0, 0, 0, 5, 4], "NEPHROLOGY": [1, 1, 1, 1, 1, 1, 1], "NURSE PRACTITIONER": [11, 14, 26, 25, 22, 24, 31], "OBSTETRICS/GYNECOLOGY": [2, 3, 2, 3, 2, 5, 4], "OPHTHALMOLOGY": [1, 0, 0, 0, 0, 0, 0], "OPTOMETRY": [0, 1, 1, 0, 1, 0, 0], "ORTHOPEDIC SURGERY": [2, 2, 1, 0, 0, 0, 0], "PHYSICIAN ASSISTANT": [1, 3, 2, 2, 2, 1, 3], "PODIATRY": [3, 3, 2, 4, 1, 1, 1], "PSYCHIATRY": [0, 2, 0, 1, 0, 0, 0]}}, "Carroll County": {"totals": [29, 16, 13, 16, 35, 26, 28], "specialties": {"CHIROPRACTIC": [3, 3, 2, 2, 2, 2, 1], "CLINICAL PSYCHOLOGIST": [0, 0, 0, 1, 1, 1, 1], "CLINICAL SOCIAL WORKER": [1, 0, 0, 0, 2, 1, 0], "DIAGNOSTIC RADIOLOGY": [0, 0, 0, 0, 2, 1, 2], "FAMILY MEDICINE": [7, 4, 4, 0, 0, 0, 0], "FAMILY PRACTICE": [0, 0, 0, 2, 6, 5, 7], "INTERNAL MEDICINE": [0, 0, 1, 1, 2, 1, 1], "INTERVENTIONAL CARDIOLOGY": [1, 0, 0, 0, 0, 0, 0], "INTERVENTIONAL RADIOLOGY": [0, 0, 0, 0, 1, 1, 0], "MENTAL HEALTH COUNSELOR": [0, 0, 0, 0, 0, 1, 0], "NURSE PRACTITIONER": [6, 4, 1, 6, 10, 9, 11], "OBSTETRICS/GYNECOLOGY": [1, 0, 1, 1, 1, 0, 0], "OPTOMETRY": [2, 2, 2, 2, 2, 2, 2], "PEDIATRIC MEDICINE": [1, 0, 0, 0, 1, 1, 1], "PHYSICAL MEDICINE AND REHABILITATION": [0, 0, 0, 0, 0, 0, 1], "PHYSICIAN ASSISTANT": [4, 1, 0, 1, 4, 0, 0], "PODIATRY": [1, 0, 1, 0, 1, 1, 1], "PSYCHOLOGIST, CLINICAL": [1, 1, 1, 0, 0, 0, 0], "QUALIFIED AUDIOLOGIST": [1, 1, 0, 0, 0, 0, 0]}}, "Clermont County": {"totals": [154, 102, 118, 135, 202, 242, 258], "specialties": {"ALLERGY/IMMUNOLOGY": [4, 4, 5, 6, 4, 3, 3], "ANESTHESIOLOGY": [6, 1, 0, 0, 6, 8, 5], "CARDIAC ELECTROPHYSIOLOGY": [0, 0, 0, 0, 1, 1, 0], "CARDIOVASCULAR DISEASE (CARDIOLOGY)": [2, 0, 0, 0, 0, 0, 0], "CERTIFIED CLINICAL NURSE SPECIALIST (CNS)": [1, 1, 1, 1, 1, 0, 1], "CERTIFIED REGISTERED NURSE ANESTHETIST (CRNA)": [4, 0, 0, 0, 10, 13, 14], "CHIROPRACTIC": [12, 10, 11, 8, 8, 8, 8], "CLINICAL PSYCHOLOGIST": [0, 0, 0, 1, 2, 3, 4], "CLINICAL SOCIAL WORKER": [2, 2, 2, 3, 6, 15, 12], "COLORECTAL SURGERY (PROCTOLOGY)": [1, 0, 0, 0, 0, 0, 0], "DERMATOLOGY": [0, 0, 0, 0, 0, 1, 1], "DIAGNOSTIC RADIOLOGY": [3, 5, 3, 5, 6, 6, 5], "EMERGENCY MEDICINE": [3, 1, 2, 2, 2, 4, 3], "ENDOCRINOLOGY": [0, 0, 1, 1, 1, 0, 0], "FAMILY MEDICINE": [18, 11, 12, 0, 0, 0, 0], "FAMILY PRACTICE": [0, 0, 0, 7, 8, 13, 14], "GASTROENTEROLOGY": [3, 1, 1, 1, 1, 1, 3], "GENERAL PRACTICE": [0, 0, 1, 0, 0, 1, 1], "GENERAL SURGERY": [3, 0, 0, 2, 3, 3, 3], "GERIATRIC MEDICINE": [1, 0, 0, 0, 0, 0, 0], "HAND SURGERY": [1, 0, 1, 0, 0, 0, 0], "HEMATOLOGY/ONCOLOGY": [0, 0, 0, 1, 0, 0, 0], "HOSPICE/PALLIATIVE CARE": [0, 0, 0, 0, 0, 0, 1], "HOSPITALIST": [0, 0, 0, 1, 1, 1, 2], "INFECTIOUS DISEASE": [1, 1, 1, 1, 2, 1, 1], "INTERNAL MEDICINE": [12, 11, 10, 10, 18, 23, 18], "INTERVENTIONAL PAIN MANAGEMENT": [0, 0, 0, 0, 0, 1, 1], "MARRIAGE AND FAMILY THERAPIST": [0, 0, 0, 0, 0, 0, 2], "MENTAL HEALTH COUNSELOR": [0, 0, 0, 0, 0, 3, 8], "NEPHROLOGY": [2, 0, 0, 0, 1, 0, 0], "NEUROLOGY": [0, 0, 0, 0, 0, 1, 0], "NURSE PRACTITIONER": [31, 24, 28, 35, 50, 61, 69], "OBSTETRICS/GYNECOLOGY": [4, 3, 2, 3, 7, 2, 7], "OCCUPATIONAL THERAPIST IN PRIVATE PRACTICE": [0, 0, 0, 0, 0, 1, 0], "OCCUPATIONAL THERAPY": [0, 0, 0, 1, 1, 0, 0], "OPHTHALMOLOGY": [2, 1, 0, 0, 0, 0, 0], "OPTOMETRY": [9, 7, 11, 12, 10, 4, 6], "ORTHOPEDIC SURGERY": [0, 0, 2, 1, 1, 1, 1], "PAIN MANAGEMENT": [0, 1, 1, 1, 0, 0, 0], "PATHOLOGY": [6, 3, 2, 4, 9, 8, 10], "PHYSICAL THERAPIST IN PRIVATE PRACTICE": [0, 0, 0, 0, 0, 11, 10], "PHYSICAL THERAPY": [4, 2, 4, 7, 9, 0, 0], "PHYSICIAN ASSISTANT": [9, 5, 8, 12, 23, 29, 32], "PODIATRY": [3, 2, 3, 3, 5, 6, 5], "PSYCHIATRY": [4, 3, 3, 3, 2, 4, 3], "PSYCHOLOGIST, CLINICAL": [1, 1, 1, 0, 0, 0, 0], "PULMONARY DISEASE": [2, 2, 1, 2, 2, 1, 3], "QUALIFIED AUDIOLOGIST": [0, 0, 1, 1, 1, 1, 1], "QUALIFIED SPEECH LANGUAGE PATHOLOGIST": [0, 0, 0, 0, 1, 2, 0], "SLEEP MEDICINE": [0, 0, 0, 0, 0, 1, 1]}}, "Columbiana County": {"totals": [301, 246, 289, 323, 383, 316, 350], "specialties": {"ALLERGY/IMMUNOLOGY": [0, 1, 0, 0, 0, 0, 0], "ANESTHESIOLOGY": [7, 1, 1, 1, 1, 2, 2], "CARDIOVASCULAR DISEASE (CARDIOLOGY)": [11, 1, 2, 6, 7, 5, 2], "CERTIFIED CLINICAL NURSE SPECIALIST (CNS)": [2, 2, 3, 6, 5, 2, 2], "CERTIFIED REGISTERED NURSE ANESTHETIST (CRNA)": [7, 5, 5, 3, 2, 3, 8], "CHIROPRACTIC": [12, 6, 7, 6, 9, 9, 10], "CLINICAL PSYCHOLOGIST": [0, 0, 0, 4, 4, 4, 4], "CLINICAL SOCIAL WORKER": [7, 5, 7, 7, 8, 9, 13], "CRITICAL CARE (INTENSIVISTS)": [0, 0, 15, 16, 0, 0, 0], "DENTIST": [0, 0, 0, 0, 0, 0, 1], "DERMATOLOGY": [1, 0, 1, 0, 0, 0, 0], "DIAGNOSTIC RADIOLOGY": [27, 25, 25, 58, 45, 17, 13], "EMERGENCY MEDICINE": [7, 10, 4, 5, 8, 5, 10], "ENDOCRINOLOGY": [1, 1, 1, 0, 0, 1, 2], "FAMILY MEDICINE": [36, 28, 30, 0, 0, 0, 0], "FAMILY PRACTICE": [0, 0, 0, 32, 40, 31, 34], "GASTROENTEROLOGY": [3, 1, 4, 4, 3, 3, 3], "GENERAL PRACTICE": [1, 0, 0, 0, 1, 0, 0], "GENERAL SURGERY": [9, 10, 9, 8, 9, 10, 10], "HEMATOLOGY/ONCOLOGY": [0, 0, 0, 0, 3, 3, 3], "HOSPITALIST": [2, 3, 4, 3, 3, 4, 2], "INFECTIOUS DISEASE": [0, 0, 0, 0, 1, 1, 1], "INTERNAL MEDICINE": [25, 26, 27, 29, 36, 28, 27], "INTERVENTIONAL CARDIOLOGY": [3, 2, 2, 3, 4, 4, 3], "INTERVENTIONAL PAIN MANAGEMENT": [1, 0, 0, 0, 1, 0, 0], "INTERVENTIONAL RADIOLOGY": [0, 0, 0, 1, 1, 0, 0], "MEDICAL ONCOLOGY": [1, 1, 1, 1, 1, 0, 0], "MENTAL HEALTH COUNSELOR": [0, 0, 0, 0, 0, 25, 37], "NEPHROLOGY": [8, 4, 6, 5, 6, 6, 5], "NEUROLOGY": [3, 2, 2, 2, 1, 0, 1], "NEUROSURGERY": [0, 0, 0, 0, 1, 0, 0], "NURSE PRACTITIONER": [51, 45, 57, 51, 73, 73, 83], "OBSTETRICS/GYNECOLOGY": [3, 3, 3, 1, 1, 2, 2], "OCCUPATIONAL THERAPIST IN PRIVATE PRACTICE": [0, 0, 0, 0, 0, 2, 2], "OCCUPATIONAL THERAPY": [0, 0, 2, 1, 3, 0, 0], "OPHTHALMOLOGY": [2, 2, 1, 1, 2, 1, 1], "OPTOMETRY": [15, 13, 15, 15, 16, 13, 17], "ORTHOPEDIC SURGERY": [9, 7, 7, 7, 26, 6, 6], "OTOLARYNGOLOGY": [2, 1, 2, 2, 3, 2, 2], "PAIN MANAGEMENT": [0, 2, 3, 2, 2, 3, 1], "PATHOLOGY": [1, 1, 1, 1, 2, 2, 2], "PHYSICAL MEDICINE AND REHABILITATION": [1, 1, 1, 1, 2, 1, 2], "PHYSICAL THERAPIST IN PRIVATE PRACTICE": [0, 0, 0, 0, 0, 12, 9], "PHYSICAL THERAPY": [4, 6, 12, 12, 13, 0, 0], "PHYSICIAN ASSISTANT": [16, 10, 9, 11, 17, 9, 12], "PLASTIC AND RECONSTRUCTIVE SURGERY": [0, 0, 1, 1, 1, 1, 1], "PODIATRY": [8, 5, 3, 3, 9, 5, 4], "PSYCHIATRY": [2, 2, 3, 2, 3, 2, 2], "PSYCHOLOGIST, CLINICAL": [4, 4, 3, 0, 0, 0, 0], "PULMONARY DISEASE": [2, 2, 1, 1, 1, 1, 1], "QUALIFIED AUDIOLOGIST": [3, 2, 3, 3, 3, 3, 3], "QUALIFIED SPEECH LANGUAGE PATHOLOGIST": [1, 2, 2, 2, 3, 3, 3], "REGISTERED DIETITIAN OR NUTRITION PROFESSIONAL": [0, 0, 1, 1, 0, 0, 0], "RHEUMATOLOGY": [2, 1, 1, 1, 0, 0, 0], "SPORTS MEDICINE": [0, 0, 0, 1, 1, 0, 1], "THORACIC SURGERY": [1, 2, 1, 1, 2, 2, 2], "UROLOGY": [0, 1, 1, 1, 0, 1, 1], "VASCULAR SURGERY": [0, 0, 0, 1, 0, 0, 0]}}, "Coshocton County": {"totals": [61, 68, 71, 67, 61, 67, 57], "specialties": {"ALLERGY/IMMUNOLOGY": [0, 0, 1, 1, 1, 1, 1], "ANESTHESIOLOGY": [1, 1, 2, 1, 0, 1, 0], "CARDIOVASCULAR DISEASE (CARDIOLOGY)": [0, 0, 0, 0, 1, 1, 0], "CERTIFIED REGISTERED NURSE ANESTHETIST (CRNA)": [2, 11, 3, 4, 2, 2, 2], "CHIROPRACTIC": [7, 6, 5, 5, 5, 7, 6], "CLINICAL SOCIAL WORKER": [3, 2, 3, 3, 3, 7, 8], "EMERGENCY MEDICINE": [10, 7, 4, 6, 7, 4, 0], "FAMILY MEDICINE": [6, 7, 7, 0, 0, 0, 0], "FAMILY PRACTICE": [0, 0, 0, 6, 10, 8, 5], "GENERAL SURGERY": [2, 2, 1, 1, 1, 2, 3], "INTERNAL MEDICINE": [3, 3, 4, 4, 5, 6, 3], "MARRIAGE AND FAMILY THERAPIST": [0, 0, 0, 0, 0, 0, 1], "MENTAL HEALTH COUNSELOR": [0, 0, 0, 0, 0, 2, 4], "NEUROSURGERY": [0, 1, 0, 0, 0, 0, 0], "NURSE PRACTITIONER": [13, 12, 23, 21, 12, 15, 11], "OBSTETRICS/GYNECOLOGY": [1, 1, 1, 1, 0, 0, 1], "OPHTHALMOLOGY": [1, 1, 1, 1, 1, 1, 1], "OPTOMETRY": [3, 2, 3, 3, 4, 4, 3], "ORTHOPEDIC SURGERY": [0, 0, 1, 0, 0, 1, 1], "PHYSICAL THERAPIST IN PRIVATE PRACTICE": [0, 0, 0, 0, 0, 0, 1], "PHYSICAL THERAPY": [2, 3, 2, 2, 0, 0, 0], "PHYSICIAN ASSISTANT": [4, 6, 7, 5, 6, 3, 3], "PODIATRY": [3, 3, 3, 3, 3, 2, 2], "QUALIFIED SPEECH LANGUAGE PATHOLOGIST": [0, 0, 0, 0, 0, 0, 1]}}, "Gallia County": {"totals": [186, 127, 134, 135, 223, 202, 186], "specialties": {"ALLERGY/IMMUNOLOGY": [1, 0, 0, 1, 1, 1, 1], "ANESTHESIOLOGY": [3, 2, 2, 2, 3, 2, 0], "CARDIAC ELECTROPHYSIOLOGY": [1, 1, 1, 1, 1, 1, 1], "CARDIOVASCULAR DISEASE (CARDIOLOGY)": [0, 0, 0, 0, 2, 2, 2], "CERTIFIED CLINICAL NURSE SPECIALIST (CNS)": [0, 0, 1, 0, 0, 0, 0], "CERTIFIED NURSE MIDWIFE (CNM)": [2, 1, 1, 1, 2, 2, 3], "CERTIFIED REGISTERED NURSE ANESTHETIST (CRNA)": [13, 9, 9, 8, 18, 16, 0], "CHIROPRACTIC": [5, 5, 5, 5, 6, 6, 6], "CLINICAL PSYCHOLOGIST": [0, 0, 0, 0, 0, 0, 1], "CLINICAL SOCIAL WORKER": [0, 0, 1, 1, 2, 0, 2], "DERMATOLOGY": [1, 1, 1, 1, 1, 1, 0], "DIAGNOSTIC RADIOLOGY": [8, 4, 4, 4, 8, 6, 6], "EMERGENCY MEDICINE": [2, 9, 6, 4, 10, 8, 9], "ENDOCRINOLOGY": [1, 1, 1, 1, 2, 1, 1], "FAMILY MEDICINE": [19, 13, 15, 0, 0, 0, 0], "FAMILY PRACTICE": [0, 0, 0, 15, 14, 15, 17], "GASTROENTEROLOGY": [1, 1, 1, 2, 2, 1, 1], "GENERAL SURGERY": [4, 2, 2, 2, 5, 4, 4], "HEMATOLOGY/ONCOLOGY": [1, 1, 2, 2, 2, 4, 3], "HOSPITALIST": [2, 1, 1, 2, 4, 5, 3], "INTERNAL MEDICINE": [16, 10, 12, 9, 12, 11, 10], "INTERVENTIONAL CARDIOLOGY": [2, 2, 2, 1, 2, 2, 2], "INTERVENTIONAL RADIOLOGY": [0, 0, 0, 1, 1, 1, 1], "MEDICAL ONCOLOGY": [0, 0, 0, 0, 0, 1, 1], "MENTAL HEALTH COUNSELOR": [0, 0, 0, 0, 0, 3, 3], "NEPHROLOGY": [0, 0, 1, 1, 1, 1, 0], "NEUROLOGY": [1, 0, 1, 0, 2, 1, 1], "NEUROSURGERY": [0, 0, 0, 0, 0, 0, 2], "NURSE PRACTITIONER": [47, 28, 31, 33, 67, 58, 57], "OBSTETRICS/GYNECOLOGY": [7, 5, 6, 5, 6, 6, 6], "OPHTHALMOLOGY": [3, 3, 2, 1, 1, 1, 1], "OPTOMETRY": [6, 5, 4, 4, 5, 4, 4], "ORTHOPEDIC SURGERY": [1, 0, 0, 1, 2, 1, 0], "OTOLARYNGOLOGY": [3, 1, 1, 3, 3, 3, 3], "PATHOLOGY": [2, 1, 1, 1, 2, 2, 3], "PEDIATRIC MEDICINE": [5, 1, 1, 1, 2, 1, 0], "PHYSICAL MEDICINE AND REHABILITATION": [4, 4, 3, 3, 5, 4, 5], "PHYSICIAN ASSISTANT": [10, 3, 3, 3, 8, 8, 10], "PLASTIC AND RECONSTRUCTIVE SURGERY": [1, 0, 0, 0, 0, 0, 0], "PODIATRY": [1, 1, 2, 2, 2, 2, 2], "PREVENTATIVE MEDICINE": [1, 1, 0, 0, 0, 0, 0], "PSYCHIATRY": [3, 3, 2, 4, 6, 3, 2], "PULMONARY DISEASE": [1, 1, 1, 1, 1, 2, 2], "QUALIFIED AUDIOLOGIST": [3, 2, 3, 2, 5, 5, 5], "RADIATION ONCOLOGY": [2, 2, 2, 4, 2, 2, 1], "REGISTERED DIETITIAN OR NUTRITION PROFESSIONAL": [1, 1, 1, 1, 2, 1, 1], "RHEUMATOLOGY": [1, 1, 1, 1, 1, 1, 1], "SPORTS MEDICINE": [0, 0, 0, 0, 0, 1, 1], "UNDEFINED NON-PHYSICIAN TYPE (SPECIFY)": [0, 0, 0, 0, 0, 0, 1], "UROLOGY": [1, 1, 1, 1, 2, 2, 1]}}, "Guernsey County": {"totals": [97, 109, 112, 111, 97, 93, 106], "specialties": {"ANESTHESIOLOGY": [2, 2, 2, 0, 0, 0, 0], "CARDIOVASCULAR DISEASE (CARDIOLOGY)": [2, 3, 3, 1, 1, 1, 2], "CERTIFIED NURSE MIDWIFE (CNM)": [1, 0, 0, 0, 0, 0, 0], "CERTIFIED REGISTERED NURSE ANESTHETIST (CRNA)": [3, 1, 1, 0, 0, 0, 3], "CHIROPRACTIC": [6, 5, 6, 5, 5, 6, 6], "CLINICAL SOCIAL WORKER": [7, 8, 9, 9, 8, 7, 8], "DERMATOLOGY": [1, 1, 1, 0, 0, 0, 0], "DIAGNOSTIC RADIOLOGY": [6, 9, 9, 3, 3, 6, 3], "EMERGENCY MEDICINE": [8, 3, 1, 3, 4, 2, 3], "FAMILY MEDICINE": [6, 6, 3, 0, 0, 0, 0], "FAMILY PRACTICE": [0, 0, 0, 2, 2, 2, 2], "GENERAL PRACTICE": [0, 1, 1, 1, 1, 1, 0], "GENERAL SURGERY": [4, 4, 4, 3, 3, 4, 4], "HEMATOLOGY/ONCOLOGY": [1, 1, 1, 1, 1, 0, 0], "INTERNAL MEDICINE": [13, 12, 11, 15, 16, 14, 11], "INTERVENTIONAL RADIOLOGY": [0, 1, 1, 1, 1, 1, 0], "MENTAL HEALTH COUNSELOR": [0, 0, 0, 0, 0, 2, 5], "NEPHROLOGY": [0, 2, 2, 2, 1, 1, 0], "NEUROLOGY": [1, 1, 1, 0, 1, 0, 0], "NEUROSURGERY": [0, 0, 0, 1, 0, 0, 0], "NURSE PRACTITIONER": [12, 21, 30, 32, 24, 28, 39], "OBSTETRICS/GYNECOLOGY": [3, 4, 3, 3, 3, 3, 3], "OPHTHALMOLOGY": [2, 1, 1, 1, 1, 1, 1], "OPTOMETRY": [3, 3, 3, 3, 3, 3, 3], "ORTHOPEDIC SURGERY": [1, 1, 2, 2, 2, 1, 1], "OTOLARYNGOLOGY": [0, 1, 0, 0, 0, 0, 0], "PATHOLOGY": [1, 0, 0, 0, 0, 0, 0], "PHYSICAL MEDICINE AND REHABILITATION": [0, 0, 0, 1, 0, 0, 0], "PHYSICAL THERAPIST IN PRIVATE PRACTICE": [0, 0, 0, 0, 0, 3, 4], "PHYSICAL THERAPY": [2, 2, 2, 1, 2, 0, 0], "PHYSICIAN ASSISTANT": [5, 7, 8, 11, 10, 4, 5], "PODIATRY": [1, 2, 2, 2, 2, 1, 2], "PSYCHIATRY": [2, 2, 1, 0, 0, 0, 1], "PULMONARY DISEASE": [1, 2, 1, 1, 1, 0, 0], "RADIATION ONCOLOGY": [1, 1, 1, 1, 1, 1, 0], "RHEUMATOLOGY": [0, 0, 0, 1, 0, 0, 0], "SPORTS MEDICINE": [1, 1, 1, 1, 1, 0, 0], "UROLOGY": [1, 1, 1, 4, 0, 1, 0]}}, "Harrison County": {"totals": [21, 21, 20, 17, 18, 18, 24], "specialties": {"ANESTHESIOLOGY": [5, 1, 1, 0, 0, 0, 0], "CARDIOVASCULAR DISEASE (CARDIOLOGY)": [1, 0, 1, 0, 0, 0, 0], "CERTIFIED REGISTERED NURSE ANESTHETIST (CRNA)": [1, 3, 4, 1, 2, 0, 0], "CHIROPRACTIC": [2, 2, 2, 2, 0, 0, 0], "DIAGNOSTIC RADIOLOGY": [0, 5, 3, 0, 0, 0, 2], "EMERGENCY MEDICINE": [0, 0, 0, 1, 1, 0, 3], "FAMILY MEDICINE": [0, 1, 2, 0, 0, 0, 0], "FAMILY PRACTICE": [0, 0, 0, 2, 2, 3, 4], "GASTROENTEROLOGY": [1, 0, 0, 0, 0, 0, 0], "GENERAL SURGERY": [0, 1, 0, 0, 0, 0, 0], "HOSPITALIST": [0, 0, 0, 1, 2, 2, 1], "INTERNAL MEDICINE": [1, 2, 1, 1, 2, 3, 4], "NEPHROLOGY": [0, 0, 0, 0, 0, 0, 1], "NURSE PRACTITIONER": [5, 2, 3, 5, 6, 5, 4], "OBSTETRICS/GYNECOLOGY": [0, 1, 0, 0, 0, 0, 0], "OPTOMETRY": [1, 0, 1, 1, 1, 1, 1], "ORTHOPEDIC SURGERY": [0, 0, 0, 1, 0, 0, 0], "PATHOLOGY": [0, 1, 0, 0, 0, 0, 0], "PHYSICIAN ASSISTANT": [3, 2, 2, 2, 1, 2, 2], "PODIATRY": [0, 0, 0, 0, 0, 1, 1], "SPORTS MEDICINE": [1, 0, 0, 0, 0, 0, 0], "UROLOGY": [0, 0, 0, 0, 1, 1, 1]}}, "Highland County": {"totals": [116, 81, 90, 88, 104, 96, 112], "specialties": {"ANESTHESIOLOGY": [1, 1, 0, 1, 1, 0, 0], "CARDIAC ELECTROPHYSIOLOGY": [0, 0, 0, 0, 1, 0, 0], "CARDIOVASCULAR DISEASE (CARDIOLOGY)": [1, 0, 0, 0, 1, 0, 0], "CERTIFIED NURSE MIDWIFE (CNM)": [0, 0, 0, 0, 0, 0, 1], "CERTIFIED REGISTERED NURSE ANESTHETIST (CRNA)": [18, 9, 12, 8, 9, 7, 4], "CHIROPRACTIC": [9, 9, 8, 8, 7, 8, 9], "CLINICAL PSYCHOLOGIST": [0, 0, 0, 0, 1, 1, 1], "DERMATOLOGY": [1, 0, 0, 0, 0, 1, 0], "EMERGENCY MEDICINE": [2, 4, 3, 0, 2, 1, 6], "FAMILY MEDICINE": [12, 8, 13, 0, 0, 0, 0], "FAMILY PRACTICE": [0, 0, 0, 14, 11, 12, 13], "GASTROENTEROLOGY": [2, 1, 1, 1, 4, 3, 3], "GENERAL SURGERY": [2, 2, 3, 1, 3, 3, 3], "HAND SURGERY": [0, 0, 0, 0, 1, 1, 1], "HEMATOLOGY/ONCOLOGY": [1, 1, 1, 1, 1, 0, 1], "HOSPITALIST": [0, 0, 0, 1, 1, 0, 2], "INTERNAL MEDICINE": [5, 3, 2, 2, 2, 2, 6], "INTERVENTIONAL CARDIOLOGY": [0, 0, 0, 0, 0, 0, 1], "INTERVENTIONAL PAIN MANAGEMENT": [1, 1, 0, 0, 0, 0, 0], "MENTAL HEALTH COUNSELOR": [0, 0, 0, 0, 0, 1, 1], "NEPHROLOGY": [3, 3, 3, 3, 3, 3, 3], "NEUROLOGY": [1, 2, 1, 0, 0, 0, 1], "NUCLEAR MEDICINE": [0, 0, 0, 0, 1, 1, 0], "NURSE PRACTITIONER": [27, 22, 26, 31, 36, 36, 34], "OBSTETRICS/GYNECOLOGY": [3, 2, 4, 3, 1, 1, 2], "OCCUPATIONAL THERAPY": [2, 0, 0, 0, 0, 0, 0], "OPHTHALMOLOGY": [1, 1, 2, 2, 2, 2, 3], "OPTOMETRY": [7, 6, 4, 7, 6, 5, 6], "ORTHOPEDIC SURGERY": [1, 1, 1, 1, 1, 1, 1], "PAIN MANAGEMENT": [0, 0, 0, 0, 1, 0, 1], "PATHOLOGY": [1, 0, 0, 0, 0, 0, 0], "PHYSICAL MEDICINE AND REHABILITATION": [1, 0, 0, 0, 0, 0, 1], "PHYSICAL THERAPY": [6, 0, 1, 1, 0, 0, 0], "PHYSICIAN ASSISTANT": [2, 0, 2, 0, 5, 5, 4], "PODIATRY": [0, 0, 0, 0, 0, 1, 2], "PSYCHIATRY": [0, 0, 1, 1, 1, 1, 1], "PSYCHOLOGIST, CLINICAL": [1, 1, 1, 0, 0, 0, 0], "PULMONARY DISEASE": [1, 1, 1, 1, 1, 0, 1], "QUALIFIED SPEECH LANGUAGE PATHOLOGIST": [1, 0, 0, 0, 0, 0, 0], "SPORTS MEDICINE": [2, 2, 0, 1, 1, 0, 0], "THORACIC SURGERY": [1, 0, 0, 0, 0, 0, 0], "VASCULAR SURGERY": [0, 1, 0, 0, 0, 0, 0]}}, "Hocking County": {"totals": [47, 39, 33, 37, 61, 89, 81], "specialties": {"ADDICTION MEDICINE": [0, 0, 0, 0, 0, 0, 1], "CARDIOVASCULAR DISEASE (CARDIOLOGY)": [0, 3, 2, 6, 1, 2, 2], "CERTIFIED REGISTERED NURSE ANESTHETIST (CRNA)": [2, 2, 2, 1, 3, 4, 3], "CHIROPRACTIC": [1, 2, 2, 2, 2, 2, 2], "CLINICAL PSYCHOLOGIST": [0, 0, 0, 1, 0, 0, 0], "CLINICAL SOCIAL WORKER": [0, 0, 1, 0, 1, 1, 1], "DIAGNOSTIC RADIOLOGY": [3, 0, 0, 0, 1, 2, 0], "EMERGENCY MEDICINE": [0, 0, 0, 0, 11, 35, 20], "FAMILY MEDICINE": [4, 4, 3, 0, 0, 0, 0], "FAMILY PRACTICE": [0, 0, 0, 2, 7, 9, 6], "GENERAL PRACTICE": [1, 0, 0, 0, 0, 0, 0], "GENERAL SURGERY": [2, 2, 2, 1, 2, 2, 2], "HOSPITALIST": [0, 0, 0, 1, 0, 0, 0], "INTERNAL MEDICINE": [10, 2, 1, 1, 6, 4, 5], "MENTAL HEALTH COUNSELOR": [0, 0, 0, 0, 0, 2, 5], "NEPHROLOGY": [1, 1, 0, 1, 0, 0, 0], "NURSE PRACTITIONER": [9, 9, 6, 10, 13, 15, 21], "OBSTETRICS/GYNECOLOGY": [1, 0, 0, 0, 0, 0, 0], "OPHTHALMOLOGY": [0, 0, 1, 0, 0, 0, 0], "OPTOMETRY": [3, 4, 5, 5, 5, 6, 7], "ORTHOPEDIC SURGERY": [2, 1, 1, 1, 2, 2, 2], "PAIN MANAGEMENT": [0, 1, 0, 1, 1, 0, 1], "PHYSICAL THERAPY": [0, 0, 0, 1, 1, 0, 0], "PHYSICIAN ASSISTANT": [2, 3, 1, 1, 1, 1, 2], "PSYCHIATRY": [3, 1, 0, 0, 1, 0, 0], "PSYCHOLOGIST, CLINICAL": [0, 0, 1, 0, 0, 0, 0], "RHEUMATOLOGY": [0, 1, 1, 0, 0, 0, 0], "UROLOGY": [2, 2, 3, 1, 2, 2, 1], "VASCULAR SURGERY": [1, 1, 1, 1, 1, 0, 0]}}, "Holmes County": {"totals": [59, 56, 55, 54, 69, 67, 47], "specialties": {"ANESTHESIOLOGY": [1, 1, 1, 2, 1, 1, 0], "CERTIFIED NURSE MIDWIFE (CNM)": [0, 0, 0, 0, 2, 1, 0], "CERTIFIED REGISTERED NURSE ANESTHETIST (CRNA)": [3, 3, 3, 3, 2, 2, 0], "CHIROPRACTIC": [6, 7, 7, 7, 7, 7, 7], "DIAGNOSTIC RADIOLOGY": [1, 1, 1, 2, 2, 2, 2], "EMERGENCY MEDICINE": [9, 12, 14, 11, 15, 15, 11], "FAMILY MEDICINE": [5, 8, 7, 0, 0, 0, 0], "FAMILY PRACTICE": [0, 0, 0, 7, 3, 5, 5], "GENERAL SURGERY": [2, 2, 2, 2, 2, 2, 0], "HOSPITALIST": [0, 0, 1, 0, 1, 0, 0], "INTERNAL MEDICINE": [4, 2, 2, 3, 4, 4, 2], "NURSE PRACTITIONER": [5, 6, 5, 4, 6, 10, 2], "OBSTETRICS/GYNECOLOGY": [3, 1, 1, 0, 0, 3, 1], "OCCUPATIONAL THERAPIST IN PRIVATE PRACTICE": [0, 0, 0, 0, 0, 1, 1], "OCCUPATIONAL THERAPY": [0, 0, 0, 0, 1, 0, 0], "OPHTHALMOLOGY": [2, 1, 1, 0, 2, 0, 0], "OPTOMETRY": [5, 0, 0, 1, 6, 2, 5], "ORTHOPEDIC SURGERY": [0, 1, 0, 0, 3, 0, 0], "OTOLARYNGOLOGY": [2, 0, 0, 0, 1, 0, 0], "PHYSICAL THERAPIST IN PRIVATE PRACTICE": [0, 0, 0, 0, 0, 3, 3], "PHYSICAL THERAPY": [3, 3, 3, 2, 4, 0, 0], "PHYSICIAN ASSISTANT": [5, 5, 6, 6, 6, 7, 5], "PODIATRY": [2, 1, 0, 1, 1, 1, 1], "QUALIFIED AUDIOLOGIST": [1, 2, 1, 2, 0, 1, 2], "UROLOGY": [0, 0, 0, 1, 0, 0, 0]}}, "Jackson County": {"totals": [77, 118, 115, 119, 73, 74, 70], "specialties": {"ALLERGY/IMMUNOLOGY": [0, 1, 1, 0, 0, 0, 0], "CARDIAC ELECTROPHYSIOLOGY": [0, 0, 0, 1, 0, 0, 0], "CARDIOVASCULAR DISEASE (CARDIOLOGY)": [1, 0, 0, 1, 1, 2, 0], "CERTIFIED NURSE MIDWIFE (CNM)": [0, 1, 1, 1, 0, 0, 0], "CERTIFIED REGISTERED NURSE ANESTHETIST (CRNA)": [3, 6, 9, 10, 3, 5, 0], "CHIROPRACTIC": [2, 2, 1, 1, 1, 1, 1], "CLINICAL PSYCHOLOGIST": [0, 0, 0, 2, 2, 2, 1], "CLINICAL SOCIAL WORKER": [0, 1, 1, 0, 0, 0, 0], "DIAGNOSTIC RADIOLOGY": [0, 2, 3, 3, 0, 0, 0], "EMERGENCY MEDICINE": [9, 10, 11, 9, 2, 5, 5], "FAMILY MEDICINE": [10, 13, 14, 0, 0, 0, 0], "FAMILY PRACTICE": [0, 0, 0, 16, 15, 17, 15], "GASTROENTEROLOGY": [0, 1, 1, 0, 1, 1, 2], "GENERAL PRACTICE": [0, 0, 0, 0, 0, 1, 0], "GENERAL SURGERY": [1, 1, 1, 4, 1, 2, 1], "HEMATOLOGY/ONCOLOGY": [0, 0, 0, 0, 0, 0, 1], "HOSPITALIST": [1, 5, 2, 5, 2, 2, 2], "INTERNAL MEDICINE": [4, 7, 5, 6, 2, 2, 3], "INTERVENTIONAL CARDIOLOGY": [1, 1, 1, 2, 2, 1, 1], "NEPHROLOGY": [1, 1, 1, 1, 3, 1, 0], "NEUROLOGY": [0, 0, 0, 1, 0, 0, 0], "NURSE PRACTITIONER": [31, 47, 44, 38, 29, 25, 29], "OBSTETRICS/GYNECOLOGY": [0, 1, 1, 2, 0, 0, 1], "OPHTHALMOLOGY": [0, 1, 1, 0, 0, 0, 0], "OPTOMETRY": [4, 4, 5, 5, 4, 3, 3], "ORTHOPEDIC SURGERY": [2, 2, 2, 2, 2, 1, 1], "OTOLARYNGOLOGY": [1, 2, 1, 1, 1, 1, 1], "PAIN MANAGEMENT": [0, 0, 0, 0, 1, 1, 1], "PATHOLOGY": [1, 2, 1, 2, 0, 0, 0], "PEDIATRIC MEDICINE": [1, 1, 0, 0, 0, 0, 0], "PHYSICAL MEDICINE AND REHABILITATION": [0, 1, 1, 1, 0, 0, 0], "PHYSICAL THERAPY": [1, 0, 0, 0, 0, 0, 0], "PHYSICIAN ASSISTANT": [0, 2, 2, 3, 1, 0, 0], "PODIATRY": [0, 0, 0, 1, 0, 0, 0], "PSYCHIATRY": [0, 0, 1, 1, 0, 0, 0], "PSYCHOLOGIST, CLINICAL": [2, 2, 2, 0, 0, 0, 0], "REGISTERED DIETITIAN OR NUTRITION PROFESSIONAL": [0, 1, 1, 0, 0, 1, 1], "UROLOGY": [1, 0, 0, 0, 0, 0, 0], "VASCULAR SURGERY": [0, 0, 1, 0, 0, 0, 1]}}, "Jefferson County": {"totals": [258, 281, 273, 280, 287, 316, 346], "specialties": {"ADVANCED HEART FAILURE AND TRANSPLANT CARDIOLOGY": [0, 0, 1, 1, 1, 0, 0], "ALLERGY/IMMUNOLOGY": [1, 1, 1, 1, 1, 0, 1], "ANESTHESIOLOGY": [8, 10, 8, 12, 17, 15, 13], "ANESTHESIOLOGY ASSISTANT": [0, 0, 0, 0, 0, 0, 5], "CARDIAC ELECTROPHYSIOLOGY": [1, 0, 1, 1, 2, 4, 1], "CARDIAC SURGERY": [1, 1, 1, 1, 0, 1, 0], "CARDIOVASCULAR DISEASE (CARDIOLOGY)": [5, 5, 4, 4, 4, 5, 5], "CERTIFIED REGISTERED NURSE ANESTHETIST (CRNA)": [22, 18, 17, 21, 16, 17, 19], "CHIROPRACTIC": [6, 7, 7, 8, 7, 5, 4], "CLINICAL PSYCHOLOGIST": [0, 0, 0, 1, 1, 1, 2], "CLINICAL SOCIAL WORKER": [3, 5, 4, 4, 4, 4, 9], "CRITICAL CARE (INTENSIVISTS)": [0, 0, 1, 0, 0, 8, 7], "DERMATOLOGY": [1, 1, 1, 1, 2, 2, 1], "DIAGNOSTIC RADIOLOGY": [7, 7, 7, 10, 8, 5, 3], "EMERGENCY MEDICINE": [2, 3, 6, 4, 7, 8, 5], "ENDOCRINOLOGY": [1, 1, 1, 1, 1, 1, 0], "FAMILY MEDICINE": [13, 12, 8, 0, 0, 0, 0], "FAMILY PRACTICE": [0, 0, 0, 8, 12, 11, 8], "GASTROENTEROLOGY": [1, 5, 5, 3, 2, 4, 3], "GENERAL PRACTICE": [1, 1, 1, 1, 1, 0, 1], "GENERAL SURGERY": [7, 6, 6, 4, 3, 4, 5], "HEMATOLOGY/ONCOLOGY": [1, 1, 1, 0, 0, 0, 0], "HOSPITALIST": [6, 7, 7, 7, 8, 8, 6], "INFECTIOUS DISEASE": [1, 2, 2, 1, 1, 5, 5], "INTERNAL MEDICINE": [22, 25, 22, 24, 24, 25, 34], "INTERVENTIONAL PAIN MANAGEMENT": [0, 0, 0, 0, 1, 1, 1], "MEDICAL ONCOLOGY": [4, 3, 5, 5, 5, 6, 6], "MENTAL HEALTH COUNSELOR": [0, 0, 0, 0, 0, 7, 21], "NEPHROLOGY": [2, 7, 7, 3, 1, 1, 2], "NEUROLOGY": [2, 2, 2, 2, 4, 3, 5], "NEUROSURGERY": [0, 0, 0, 0, 2, 1, 3], "NURSE PRACTITIONER": [61, 69, 68, 67, 63, 68, 74], "OBSTETRICS/GYNECOLOGY": [7, 8, 6, 6, 4, 5, 5], "OCCUPATIONAL THERAPIST IN PRIVATE PRACTICE": [0, 0, 0, 0, 0, 2, 2], "OCCUPATIONAL THERAPY": [1, 1, 1, 3, 3, 0, 0], "OPHTHALMOLOGY": [7, 6, 6, 7, 6, 7, 7], "OPTOMETRY": [6, 6, 6, 7, 7, 8, 6], "ORAL SURGERY": [1, 1, 1, 1, 1, 0, 1], "ORTHOPEDIC SURGERY": [3, 4, 5, 4, 7, 13, 8], "OTOLARYNGOLOGY": [2, 2, 2, 2, 2, 3, 3], "PAIN MANAGEMENT": [1, 1, 1, 1, 2, 3, 1], "PATHOLOGY": [3, 3, 3, 2, 2, 4, 3], "PEDIATRIC MEDICINE": [2, 1, 1, 1, 1, 1, 1], "PHYSICAL MEDICINE AND REHABILITATION": [1, 1, 1, 1, 1, 1, 2], "PHYSICAL THERAPIST IN PRIVATE PRACTICE": [0, 0, 0, 0, 0, 5, 8], "PHYSICAL THERAPY": [5, 4, 3, 2, 2, 0, 0], "PHYSICIAN ASSISTANT": [12, 17, 17, 20, 23, 22, 27], "PLASTIC AND RECONSTRUCTIVE SURGERY": [1, 1, 1, 1, 1, 1, 1], "PODIATRY": [6, 4, 3, 3, 3, 4, 5], "PSYCHIATRY": [3, 5, 3, 4, 6, 2, 4], "PSYCHOLOGIST, CLINICAL": [1, 0, 1, 0, 0, 0, 0], "PULMONARY DISEASE": [2, 3, 1, 1, 2, 1, 1], "QUALIFIED AUDIOLOGIST": [3, 3, 3, 3, 2, 2, 2], "QUALIFIED SPEECH LANGUAGE PATHOLOGIST": [1, 1, 1, 1, 1, 1, 1], "RADIATION ONCOLOGY": [5, 4, 5, 5, 5, 0, 3], "RHEUMATOLOGY": [0, 0, 0, 2, 2, 4, 0], "SPORTS MEDICINE": [2, 3, 3, 2, 2, 2, 2], "THORACIC SURGERY": [1, 0, 1, 2, 1, 2, 1], "UROLOGY": [3, 3, 4, 4, 3, 3, 3]}}, "Lawrence County": {"totals": [182, 165, 181, 191, 228, 210, 223], "specialties": {"ANESTHESIOLOGY": [5, 8, 7, 9, 8, 9, 7], "CARDIAC ELECTROPHYSIOLOGY": [1, 1, 0, 0, 0, 0, 0], "CARDIOVASCULAR DISEASE (CARDIOLOGY)": [3, 0, 2, 2, 6, 5, 7], "CERTIFIED NURSE MIDWIFE (CNM)": [1, 2, 2, 2, 1, 1, 1], "CERTIFIED REGISTERED NURSE ANESTHETIST (CRNA)": [25, 20, 23, 22, 22, 19, 17], "CHIROPRACTIC": [5, 5, 5, 6, 4, 3, 4], "CLINICAL SOCIAL WORKER": [1, 2, 5, 4, 6, 6, 4], "DIAGNOSTIC RADIOLOGY": [16, 13, 11, 14, 17, 15, 16], "EMERGENCY MEDICINE": [9, 3, 5, 3, 3, 4, 4], "FAMILY MEDICINE": [16, 18, 17, 0, 0, 0, 0], "FAMILY PRACTICE": [0, 0, 0, 16, 28, 18, 14], "GASTROENTEROLOGY": [2, 2, 0, 0, 0, 0, 0], "GENERAL SURGERY": [0, 0, 0, 0, 1, 1, 1], "GERIATRIC MEDICINE": [0, 0, 0, 0, 1, 0, 0], "HEMATOLOGY/ONCOLOGY": [0, 0, 0, 0, 1, 0, 0], "HOSPITALIST": [0, 0, 0, 0, 0, 0, 1], "INTERNAL MEDICINE": [6, 5, 6, 6, 9, 9, 8], "INTERVENTIONAL CARDIOLOGY": [0, 0, 0, 0, 1, 0, 0], "INTERVENTIONAL RADIOLOGY": [2, 2, 2, 2, 2, 3, 3], "MENTAL HEALTH COUNSELOR": [0, 0, 0, 0, 0, 5, 14], "NEPHROLOGY": [6, 3, 4, 3, 1, 2, 3], "NEUROLOGY": [1, 2, 2, 2, 2, 1, 2], "NEUROSURGERY": [1, 1, 1, 2, 1, 1, 2], "NURSE PRACTITIONER": [44, 41, 55, 57, 68, 74, 71], "OBSTETRICS/GYNECOLOGY": [1, 2, 1, 2, 0, 0, 1], "OPHTHALMOLOGY": [0, 1, 1, 1, 2, 1, 1], "OPTOMETRY": [8, 6, 8, 8, 8, 6, 7], "ORTHOPEDIC SURGERY": [5, 7, 5, 6, 10, 7, 8], "OTOLARYNGOLOGY": [4, 5, 5, 5, 4, 4, 4], "PEDIATRIC MEDICINE": [0, 0, 0, 0, 1, 2, 1], "PHYSICAL MEDICINE AND REHABILITATION": [1, 1, 1, 1, 1, 0, 1], "PHYSICAL THERAPIST IN PRIVATE PRACTICE": [0, 0, 0, 0, 0, 8, 10], "PHYSICAL THERAPY": [8, 5, 5, 8, 10, 0, 0], "PHYSICIAN ASSISTANT": [5, 4, 1, 1, 2, 1, 4], "PLASTIC AND RECONSTRUCTIVE SURGERY": [3, 2, 3, 3, 2, 1, 1], "PODIATRY": [2, 2, 2, 2, 3, 2, 2], "PSYCHIATRY": [0, 0, 1, 1, 0, 0, 0], "QUALIFIED AUDIOLOGIST": [0, 1, 0, 1, 0, 0, 0], "REGISTERED DIETITIAN OR NUTRITION PROFESSIONAL": [0, 0, 0, 1, 0, 0, 0], "SPORTS MEDICINE": [0, 0, 0, 0, 1, 0, 1], "UNDEFINED NON-PHYSICIAN TYPE (SPECIFY)": [0, 0, 0, 0, 0, 0, 1], "UROLOGY": [1, 1, 1, 1, 2, 2, 2]}}, "Mahoning County": {"totals": [969, 1142, 1191, 1176, 1043, 1188, 1249], "specialties": {"ADDICTION MEDICINE": [1, 1, 0, 0, 0, 0, 0], "ALLERGY/IMMUNOLOGY": [4, 5, 5, 3, 3, 2, 2], "ANESTHESIOLOGY": [23, 27, 27, 30, 24, 32, 31], "ANESTHESIOLOGY ASSISTANT": [2, 2, 2, 3, 2, 4, 5], "CARDIAC ELECTROPHYSIOLOGY": [3, 5, 4, 3, 2, 2, 3], "CARDIOVASCULAR DISEASE (CARDIOLOGY)": [4, 16, 16, 6, 2, 5, 9], "CERTIFIED CLINICAL NURSE SPECIALIST (CNS)": [18, 19, 18, 16, 18, 19, 20], "CERTIFIED NURSE MIDWIFE (CNM)": [2, 4, 5, 5, 6, 5, 6], "CERTIFIED REGISTERED NURSE ANESTHETIST (CRNA)": [75, 80, 80, 85, 79, 95, 113], "CHIROPRACTIC": [36, 39, 36, 40, 35, 33, 35], "CLINICAL PSYCHOLOGIST": [0, 0, 0, 13, 12, 12, 13], "CLINICAL SOCIAL WORKER": [51, 54, 61, 52, 53, 61, 71], "COLORECTAL SURGERY (PROCTOLOGY)": [1, 1, 1, 1, 1, 1, 1], "CRITICAL CARE (INTENSIVISTS)": [2, 1, 1, 2, 2, 5, 5], "DERMATOLOGY": [8, 9, 10, 12, 13, 13, 12], "DIAGNOSTIC RADIOLOGY": [17, 10, 7, 10, 5, 10, 10], "EMERGENCY MEDICINE": [35, 34, 42, 35, 35, 33, 28], "ENDOCRINOLOGY": [4, 5, 4, 4, 4, 3, 3], "FAMILY MEDICINE": [89, 100, 104, 0, 0, 0, 0], "FAMILY PRACTICE": [0, 0, 0, 99, 78, 92, 88], "GASTROENTEROLOGY": [2, 3, 3, 2, 3, 4, 3], "GENERAL PRACTICE": [2, 3, 2, 2, 1, 2, 1], "GENERAL SURGERY": [27, 29, 29, 31, 29, 28, 28], "GERIATRIC MEDICINE": [1, 1, 1, 1, 1, 1, 1], "GYNECOLOGICAL ONCOLOGY": [1, 1, 1, 0, 0, 0, 0], "HAND SURGERY": [0, 0, 0, 1, 1, 1, 1], "HEMATOLOGY": [0, 0, 0, 0, 0, 1, 0], "HEMATOLOGY/ONCOLOGY": [3, 6, 6, 4, 2, 5, 5], "HOSPICE/PALLIATIVE CARE": [1, 1, 1, 0, 0, 0, 0], "HOSPITALIST": [4, 8, 8, 8, 7, 10, 11], "INFECTIOUS DISEASE": [11, 11, 9, 7, 7, 7, 6], "INTERNAL MEDICINE": [79, 91, 97, 94, 88, 97, 107], "INTERVENTIONAL CARDIOLOGY": [3, 5, 5, 2, 1, 1, 1], "INTERVENTIONAL PAIN MANAGEMENT": [0, 1, 1, 1, 0, 1, 1], "INTERVENTIONAL RADIOLOGY": [0, 2, 1, 0, 0, 0, 1], "MARRIAGE AND FAMILY THERAPIST": [0, 0, 0, 0, 0, 0, 2], "MAXILLOFACIAL SURGERY": [2, 2, 3, 3, 3, 3, 3], "MEDICAL ONCOLOGY": [2, 1, 1, 1, 1, 1, 1], "MENTAL HEALTH COUNSELOR": [0, 0, 0, 0, 0, 50, 59], "NEPHROLOGY": [11, 18, 13, 15, 13, 12, 10], "NEUROLOGY": [6, 8, 8, 6, 4, 6, 10], "NEUROSURGERY": [3, 2, 5, 4, 2, 2, 2], "NURSE PRACTITIONER": [125, 170, 196, 226, 219, 235, 244], "OBSTETRICS/GYNECOLOGY": [24, 25, 21, 22, 19, 19, 19], "OCCUPATIONAL THERAPIST IN PRIVATE PRACTICE": [0, 0, 0, 0, 0, 11, 9], "OCCUPATIONAL THERAPY": [6, 9, 14, 12, 15, 0, 0], "OPHTHALMOLOGY": [16, 13, 14, 12, 12, 12, 10], "OPTOMETRY": [23, 25, 25, 26, 19, 23, 20], "ORTHOPEDIC SURGERY": [24, 25, 24, 27, 16, 22, 22], "OTOLARYNGOLOGY": [3, 4, 5, 5, 5, 5, 5], "PAIN MANAGEMENT": [2, 3, 2, 5, 3, 4, 2], "PATHOLOGY": [12, 12, 12, 12, 10, 10, 10], "PEDIATRIC MEDICINE": [4, 5, 4, 2, 2, 1, 2], "PHYSICAL MEDICINE AND REHABILITATION": [7, 8, 6, 6, 7, 5, 6], "PHYSICAL THERAPIST IN PRIVATE PRACTICE": [0, 0, 0, 0, 0, 55, 61], "PHYSICAL THERAPY": [45, 56, 64, 60, 61, 0, 0], "PHYSICIAN ASSISTANT": [42, 71, 72, 70, 43, 48, 50], "PLASTIC AND RECONSTRUCTIVE SURGERY": [5, 5, 5, 4, 3, 4, 3], "PODIATRY": [15, 18, 19, 13, 13, 14, 14], "PSYCHIATRY": [15, 15, 16, 13, 11, 11, 14], "PSYCHOLOGIST, CLINICAL": [18, 15, 15, 0, 0, 0, 0], "PULMONARY DISEASE": [9, 10, 8, 10, 10, 9, 7], "QUALIFIED AUDIOLOGIST": [11, 13, 14, 14, 13, 13, 14], "QUALIFIED SPEECH LANGUAGE PATHOLOGIST": [4, 5, 2, 2, 2, 0, 0], "RADIATION ONCOLOGY": [2, 5, 6, 7, 5, 7, 8], "REGISTERED DIETITIAN OR NUTRITION PROFESSIONAL": [1, 1, 2, 3, 2, 3, 3], "RHEUMATOLOGY": [3, 3, 4, 4, 4, 4, 4], "SLEEP MEDICINE": [1, 2, 2, 1, 0, 0, 0], "SPORTS MEDICINE": [0, 0, 2, 0, 1, 1, 1], "THORACIC SURGERY": [4, 4, 5, 5, 2, 2, 2], "UNDEFINED NON-PHYSICIAN TYPE (SPECIFY)": [0, 0, 0, 0, 0, 1, 0], "UROLOGY": [9, 9, 9, 9, 8, 8, 8], "VASCULAR SURGERY": [6, 6, 6, 5, 1, 2, 3]}}, "Meigs County": {"totals": [11, 21, 21, 18, 9, 23, 25], "specialties": {"CLINICAL PSYCHOLOGIST": [0, 0, 0, 0, 0, 1, 1], "EMERGENCY MEDICINE": [0, 1, 1, 1, 0, 0, 0], "FAMILY MEDICINE": [1, 1, 1, 0, 0, 0, 0], "FAMILY PRACTICE": [0, 0, 0, 1, 1, 2, 2], "INTERNAL MEDICINE": [0, 3, 3, 2, 0, 0, 0], "MENTAL HEALTH COUNSELOR": [0, 0, 0, 0, 0, 3, 5], "NURSE PRACTITIONER": [7, 9, 10, 10, 6, 14, 15], "OPTOMETRY": [2, 2, 2, 2, 2, 2, 2], "PHYSICAL THERAPY": [0, 1, 1, 0, 0, 0, 0], "PHYSICIAN ASSISTANT": [0, 2, 2, 2, 0, 0, 0], "PSYCHIATRY": [0, 0, 0, 0, 0, 1, 0], "PSYCHOLOGIST, CLINICAL": [1, 1, 0, 0, 0, 0, 0], "QUALIFIED SPEECH LANGUAGE PATHOLOGIST": [0, 1, 1, 0, 0, 0, 0]}}, "Monroe County": {"totals": [14, 12, 8, 7, 11, 13, 12], "specialties": {"CHIROPRACTIC": [2, 2, 2, 2, 2, 2, 2], "FAMILY MEDICINE": [1, 1, 2, 0, 0, 0, 0], "FAMILY PRACTICE": [0, 0, 0, 1, 0, 0, 0], "GENERAL PRACTICE": [1, 1, 0, 0, 0, 0, 0], "HEMATOLOGY/ONCOLOGY": [1, 0, 0, 0, 0, 0, 0], "MENTAL HEALTH COUNSELOR": [0, 0, 0, 0, 0, 1, 1], "NURSE PRACTITIONER": [3, 1, 0, 2, 4, 5, 5], "OPTOMETRY": [3, 3, 1, 0, 0, 0, 0], "PHYSICAL MEDICINE AND REHABILITATION": [0, 0, 0, 0, 1, 0, 0], "PHYSICAL THERAPIST IN PRIVATE PRACTICE": [0, 0, 0, 0, 0, 2, 2], "PHYSICAL THERAPY": [0, 0, 0, 0, 1, 0, 0], "PHYSICIAN ASSISTANT": [1, 2, 1, 0, 1, 1, 1], "PODIATRY": [2, 2, 2, 2, 2, 2, 1]}}, "Morgan County": {"totals": [11, 18, 18, 19, 15, 20, 22], "specialties": {"CERTIFIED NURSE MIDWIFE (CNM)": [0, 0, 0, 0, 0, 1, 1], "CHIROPRACTIC": [2, 2, 2, 2, 2, 2, 2], "CLINICAL SOCIAL WORKER": [1, 1, 2, 1, 2, 0, 0], "FAMILY MEDICINE": [0, 0, 1, 0, 0, 0, 0], "FAMILY PRACTICE": [0, 0, 0, 2, 0, 0, 0], "GENERAL PRACTICE": [0, 1, 0, 0, 0, 0, 0], "MENTAL HEALTH COUNSELOR": [0, 0, 0, 0, 0, 2, 2], "NURSE PRACTITIONER": [4, 9, 11, 9, 4, 9, 11], "OBSTETRICS/GYNECOLOGY": [0, 3, 0, 2, 1, 0, 0], "OPTOMETRY": [1, 0, 0, 0, 0, 0, 0], "PHYSICAL THERAPIST IN PRIVATE PRACTICE": [0, 0, 0, 0, 0, 5, 5], "PHYSICAL THERAPY": [3, 2, 2, 1, 5, 0, 0], "PHYSICIAN ASSISTANT": [0, 0, 0, 2, 1, 1, 1]}}, "Muskingum County": {"totals": [454, 438, 466, 479, 450, 485, 518], "specialties": {"ALLERGY/IMMUNOLOGY": [0, 1, 1, 0, 0, 1, 1], "ANESTHESIOLOGY": [13, 13, 17, 12, 13, 12, 15], "CARDIAC ELECTROPHYSIOLOGY": [3, 3, 3, 3, 3, 3, 4], "CARDIAC SURGERY": [0, 0, 0, 1, 1, 0, 0], "CARDIOVASCULAR DISEASE (CARDIOLOGY)": [11, 8, 11, 9, 10, 10, 12], "CERTIFIED CLINICAL NURSE SPECIALIST (CNS)": [1, 1, 1, 1, 1, 1, 1], "CERTIFIED NURSE MIDWIFE (CNM)": [1, 0, 1, 1, 1, 0, 1], "CERTIFIED REGISTERED NURSE ANESTHETIST (CRNA)": [39, 32, 37, 42, 34, 46, 38], "CHIROPRACTIC": [9, 8, 9, 9, 9, 9, 9], "CLINICAL PSYCHOLOGIST": [0, 0, 0, 1, 0, 0, 1], "CLINICAL SOCIAL WORKER": [15, 22, 20, 21, 16, 13, 17], "CRITICAL CARE (INTENSIVISTS)": [1, 1, 1, 1, 1, 1, 4], "DERMATOLOGY": [0, 5, 0, 3, 0, 0, 0], "DIAGNOSTIC RADIOLOGY": [24, 7, 5, 1, 0, 2, 2], "EMERGENCY MEDICINE": [13, 23, 19, 21, 24, 22, 22], "ENDOCRINOLOGY": [2, 2, 1, 2, 3, 2, 3], "FAMILY MEDICINE": [24, 20, 25, 0, 0, 0, 0], "FAMILY PRACTICE": [0, 0, 0, 22, 24, 27, 24], "GASTROENTEROLOGY": [4, 4, 5, 5, 5, 6, 7], "GENERAL PRACTICE": [2, 2, 2, 2, 1, 2, 2], "GENERAL SURGERY": [10, 6, 5, 6, 8, 8, 10], "HEMATOLOGY": [0, 1, 0, 0, 0, 0, 0], "HEMATOLOGY/ONCOLOGY": [2, 2, 2, 2, 2, 3, 3], "HOSPICE/PALLIATIVE CARE": [2, 2, 4, 3, 2, 2, 2], "HOSPITALIST": [1, 0, 1, 2, 1, 1, 2], "INFECTIOUS DISEASE": [1, 1, 2, 2, 2, 2, 2], "INTERNAL MEDICINE": [33, 27, 30, 37, 18, 18, 16], "INTERVENTIONAL CARDIOLOGY": [3, 2, 2, 2, 3, 2, 3], "INTERVENTIONAL RADIOLOGY": [0, 0, 1, 0, 0, 0, 0], "MEDICAL ONCOLOGY": [1, 1, 1, 1, 1, 1, 1], "MENTAL HEALTH COUNSELOR": [0, 0, 0, 0, 0, 4, 4], "NEPHROLOGY": [3, 1, 1, 1, 2, 2, 2], "NEUROLOGY": [6, 2, 2, 2, 2, 2, 2], "NEUROSURGERY": [4, 3, 4, 2, 3, 3, 3], "NURSE PRACTITIONER": [106, 113, 117, 139, 146, 147, 158], "OBSTETRICS/GYNECOLOGY": [12, 6, 9, 7, 8, 12, 12], "OCCUPATIONAL THERAPIST IN PRIVATE PRACTICE": [0, 0, 0, 0, 0, 1, 0], "OCCUPATIONAL THERAPY": [0, 0, 1, 1, 1, 0, 0], "OPHTHALMOLOGY": [6, 6, 6, 7, 5, 5, 5], "OPTOMETRY": [15, 14, 13, 11, 10, 11, 12], "ORAL SURGERY": [0, 1, 1, 2, 1, 3, 3], "ORTHOPEDIC SURGERY": [13, 17, 14, 14, 11, 12, 16], "OTOLARYNGOLOGY": [6, 7, 6, 5, 4, 5, 5], "PAIN MANAGEMENT": [2, 2, 2, 2, 1, 1, 2], "PATHOLOGY": [3, 3, 3, 2, 3, 0, 1], "PHYSICAL MEDICINE AND REHABILITATION": [2, 2, 3, 3, 3, 3, 3], "PHYSICAL THERAPIST IN PRIVATE PRACTICE": [0, 0, 0, 0, 0, 6, 6], "PHYSICAL THERAPY": [5, 5, 8, 7, 5, 0, 0], "PHYSICIAN ASSISTANT": [24, 30, 36, 32, 34, 42, 46], "PODIATRY": [4, 3, 3, 3, 3, 4, 4], "PSYCHIATRY": [4, 6, 6, 5, 2, 3, 3], "PSYCHOLOGIST, CLINICAL": [2, 2, 2, 0, 0, 0, 0], "PULMONARY DISEASE": [6, 6, 8, 6, 6, 8, 8], "QUALIFIED AUDIOLOGIST": [3, 3, 3, 3, 3, 2, 3], "RADIATION ONCOLOGY": [2, 2, 2, 2, 3, 3, 2], "RHEUMATOLOGY": [2, 2, 2, 2, 3, 3, 2], "SPORTS MEDICINE": [2, 2, 2, 2, 2, 2, 2], "THORACIC SURGERY": [3, 2, 2, 4, 2, 1, 3], "UROLOGY": [1, 2, 2, 1, 2, 4, 6], "VASCULAR SURGERY": [3, 2, 2, 2, 2, 2, 3]}}, "Noble County": {"totals": [10, 6, 11, 8, 16, 13, 13], "specialties": {"CHIROPRACTIC": [2, 2, 3, 3, 3, 3, 3], "FAMILY MEDICINE": [2, 2, 4, 0, 0, 0, 0], "FAMILY PRACTICE": [0, 0, 0, 1, 3, 4, 4], "MENTAL HEALTH COUNSELOR": [0, 0, 0, 0, 0, 1, 1], "NURSE PRACTITIONER": [3, 2, 2, 2, 5, 3, 3], "OPTOMETRY": [0, 0, 1, 1, 1, 1, 1], "PHYSICAL THERAPIST IN PRIVATE PRACTICE": [0, 0, 0, 0, 0, 1, 1], "PHYSICAL THERAPY": [3, 0, 0, 1, 4, 0, 0], "PSYCHIATRY": [0, 0, 1, 0, 0, 0, 0]}}, "Perry County": {"totals": [23, 31, 38, 36, 25, 35, 44], "specialties": {"CARDIOVASCULAR DISEASE (CARDIOLOGY)": [0, 2, 2, 1, 0, 0, 0], "CHIROPRACTIC": [0, 0, 0, 0, 0, 0, 1], "CLINICAL SOCIAL WORKER": [1, 1, 0, 0, 2, 4, 5], "EMERGENCY MEDICINE": [0, 0, 0, 1, 0, 0, 0], "FAMILY MEDICINE": [9, 11, 9, 0, 0, 0, 0], "FAMILY PRACTICE": [0, 0, 0, 10, 9, 10, 10], "GENERAL PRACTICE": [1, 1, 1, 1, 1, 1, 1], "GENERAL SURGERY": [0, 3, 3, 3, 1, 1, 1], "MENTAL HEALTH COUNSELOR": [0, 0, 0, 0, 0, 3, 3], "NURSE PRACTITIONER": [8, 9, 15, 15, 9, 13, 17], "OCCUPATIONAL THERAPIST IN PRIVATE PRACTICE": [0, 0, 0, 0, 0, 0, 1], "OPTOMETRY": [2, 1, 4, 2, 1, 0, 1], "PHYSICAL THERAPIST IN PRIVATE PRACTICE": [0, 0, 0, 0, 0, 3, 4], "PHYSICAL THERAPY": [2, 3, 3, 1, 2, 0, 0], "PHYSICIAN ASSISTANT": [0, 0, 1, 2, 0, 0, 0]}}, "Pike County": {"totals": [15, 23, 48, 33, 25, 31, 53], "specialties": {"CERTIFIED NURSE MIDWIFE (CNM)": [0, 0, 1, 1, 0, 0, 0], "CERTIFIED REGISTERED NURSE ANESTHETIST (CRNA)": [0, 2, 1, 0, 0, 0, 0], "CHIROPRACTIC": [1, 1, 2, 2, 1, 2, 2], "CLINICAL SOCIAL WORKER": [0, 0, 0, 1, 3, 7, 7], "EMERGENCY MEDICINE": [1, 1, 0, 1, 0, 0, 9], "FAMILY MEDICINE": [2, 4, 8, 0, 0, 0, 0], "FAMILY PRACTICE": [0, 0, 0, 3, 3, 2, 5], "GENERAL SURGERY": [0, 1, 1, 1, 0, 0, 0], "HOSPITALIST": [0, 0, 1, 0, 1, 0, 0], "INTERNAL MEDICINE": [2, 1, 7, 1, 3, 2, 8], "MENTAL HEALTH COUNSELOR": [0, 0, 0, 0, 0, 0, 2], "NURSE PRACTITIONER": [8, 11, 24, 20, 13, 15, 18], "OBSTETRICS/GYNECOLOGY": [0, 0, 0, 0, 0, 0, 1], "OPTOMETRY": [1, 1, 1, 1, 1, 1, 0], "PSYCHIATRY": [0, 1, 1, 1, 0, 2, 1], "SPORTS MEDICINE": [0, 0, 1, 0, 0, 0, 0], "VASCULAR SURGERY": [0, 0, 0, 1, 0, 0, 0]}}, "Ross County": {"totals": [297, 357, 393, 401, 396, 370, 419], "specialties": {"ADVANCED HEART FAILURE AND TRANSPLANT CARDIOLOGY": [0, 1, 0, 0, 0, 0, 0], "ALLERGY/IMMUNOLOGY": [1, 2, 2, 2, 2, 2, 1], "ANESTHESIOLOGY": [10, 10, 11, 3, 11, 8, 12], "CARDIAC ELECTROPHYSIOLOGY": [1, 1, 1, 0, 0, 1, 0], "CARDIAC SURGERY": [0, 0, 0, 0, 0, 1, 1], "CARDIOVASCULAR DISEASE (CARDIOLOGY)": [4, 8, 6, 8, 5, 5, 4], "CERTIFIED CLINICAL NURSE SPECIALIST (CNS)": [1, 1, 1, 1, 1, 0, 0], "CERTIFIED NURSE MIDWIFE (CNM)": [5, 4, 5, 5, 8, 6, 5], "CERTIFIED REGISTERED NURSE ANESTHETIST (CRNA)": [22, 24, 29, 33, 25, 25, 28], "CHIROPRACTIC": [11, 11, 15, 13, 12, 11, 10], "CLINICAL PSYCHOLOGIST": [0, 0, 0, 6, 5, 5, 6], "CLINICAL SOCIAL WORKER": [3, 7, 7, 8, 10, 10, 12], "CRITICAL CARE (INTENSIVISTS)": [0, 0, 1, 1, 1, 1, 0], "DENTIST": [0, 0, 0, 0, 0, 0, 1], "DERMATOLOGY": [4, 5, 4, 6, 6, 6, 6], "EMERGENCY MEDICINE": [22, 2, 4, 2, 3, 2, 11], "ENDOCRINOLOGY": [2, 4, 4, 3, 1, 2, 2], "FAMILY MEDICINE": [25, 24, 26, 0, 0, 0, 0], "FAMILY PRACTICE": [0, 0, 0, 21, 25, 26, 29], "GASTROENTEROLOGY": [2, 5, 6, 5, 4, 5, 8], "GENERAL PRACTICE": [1, 1, 3, 2, 2, 1, 1], "GENERAL SURGERY": [5, 8, 6, 8, 5, 5, 5], "HAND SURGERY": [1, 1, 1, 1, 1, 1, 0], "HEMATOLOGY/ONCOLOGY": [3, 3, 2, 3, 1, 1, 0], "HOSPICE/PALLIATIVE CARE": [1, 1, 1, 1, 1, 1, 1], "HOSPITALIST": [12, 18, 12, 15, 21, 11, 9], "INFECTIOUS DISEASE": [1, 1, 2, 2, 2, 1, 1], "INTERNAL MEDICINE": [15, 16, 17, 19, 22, 25, 34], "INTERVENTIONAL CARDIOLOGY": [3, 7, 6, 5, 4, 3, 0], "INTERVENTIONAL PAIN MANAGEMENT": [0, 0, 2, 1, 1, 1, 1], "MEDICAL ONCOLOGY": [2, 2, 5, 4, 3, 3, 3], "MENTAL HEALTH COUNSELOR": [0, 0, 0, 0, 0, 10, 17], "NEPHROLOGY": [2, 3, 4, 5, 3, 2, 0], "NEUROLOGY": [2, 4, 4, 4, 4, 3, 4], "NEUROSURGERY": [0, 0, 1, 1, 1, 1, 1], "NURSE PRACTITIONER": [48, 79, 84, 100, 103, 92, 114], "OBSTETRICS/GYNECOLOGY": [11, 10, 12, 12, 13, 10, 8], "OCCUPATIONAL THERAPIST IN PRIVATE PRACTICE": [0, 0, 0, 0, 0, 1, 0], "OCCUPATIONAL THERAPY": [2, 1, 2, 2, 1, 0, 0], "OPHTHALMOLOGY": [3, 7, 5, 8, 4, 4, 1], "OPTOMETRY": [9, 9, 12, 12, 11, 11, 13], "ORAL SURGERY": [1, 1, 1, 1, 1, 0, 0], "ORTHOPEDIC SURGERY": [3, 4, 9, 6, 6, 4, 5], "OSTEOPATHIC MANIPULATIVE MEDICINE": [1, 1, 1, 1, 1, 1, 1], "OTOLARYNGOLOGY": [6, 3, 6, 6, 3, 5, 4], "PAIN MANAGEMENT": [1, 1, 1, 0, 0, 0, 0], "PATHOLOGY": [0, 1, 2, 2, 1, 0, 0], "PEDIATRIC MEDICINE": [1, 2, 2, 2, 1, 1, 1], "PHYSICAL MEDICINE AND REHABILITATION": [3, 4, 3, 3, 4, 3, 2], "PHYSICAL THERAPIST IN PRIVATE PRACTICE": [0, 0, 0, 0, 0, 5, 5], "PHYSICAL THERAPY": [5, 6, 4, 3, 6, 0, 0], "PHYSICIAN ASSISTANT": [5, 8, 11, 13, 10, 11, 9], "PODIATRY": [4, 5, 6, 5, 5, 6, 5], "PREVENTATIVE MEDICINE": [1, 1, 1, 0, 0, 0, 0], "PREVENTIVE MEDICINE": [0, 0, 0, 1, 0, 0, 0], "PSYCHIATRY": [9, 8, 10, 10, 9, 5, 8], "PSYCHOLOGIST, CLINICAL": [3, 4, 4, 0, 0, 0, 0], "PULMONARY DISEASE": [2, 3, 4, 3, 2, 2, 2], "QUALIFIED AUDIOLOGIST": [0, 3, 3, 2, 4, 4, 3], "RADIATION ONCOLOGY": [2, 2, 2, 2, 2, 2, 2], "RHEUMATOLOGY": [1, 1, 2, 2, 2, 3, 3], "SPORTS MEDICINE": [5, 6, 8, 6, 5, 7, 7], "THORACIC SURGERY": [3, 4, 3, 3, 3, 2, 2], "UNDEFINED NON-PHYSICIAN TYPE (SPECIFY)": [0, 0, 0, 0, 0, 0, 5], "UNDERSEA AND HYPERBARIC MEDICINE": [0, 1, 1, 0, 0, 0, 0], "UROLOGY": [4, 4, 5, 6, 5, 4, 4], "VASCULAR SURGERY": [3, 4, 1, 2, 4, 2, 2]}}, "Scioto County": {"totals": [313, 331, 360, 360, 365, 402, 459], "specialties": {"ALLERGY/IMMUNOLOGY": [1, 1, 1, 1, 1, 1, 1], "ANESTHESIOLOGY": [15, 12, 14, 14, 12, 17, 15], "CARDIAC ELECTROPHYSIOLOGY": [1, 0, 0, 0, 1, 1, 1], "CARDIOVASCULAR DISEASE (CARDIOLOGY)": [5, 8, 8, 8, 4, 6, 5], "CERTIFIED NURSE MIDWIFE (CNM)": [1, 1, 0, 0, 2, 2, 2], "CERTIFIED REGISTERED NURSE ANESTHETIST (CRNA)": [29, 28, 26, 26, 26, 36, 43], "CHIROPRACTIC": [5, 6, 6, 5, 5, 5, 4], "CLINICAL SOCIAL WORKER": [4, 5, 5, 4, 4, 4, 10], "COLORECTAL SURGERY (PROCTOLOGY)": [0, 0, 0, 0, 1, 0, 0], "CRITICAL CARE (INTENSIVISTS)": [0, 2, 2, 2, 3, 0, 0], "DERMATOLOGY": [1, 2, 2, 1, 1, 1, 2], "DIAGNOSTIC RADIOLOGY": [11, 12, 14, 18, 14, 16, 39], "EMERGENCY MEDICINE": [8, 6, 6, 5, 10, 13, 12], "ENDOCRINOLOGY": [0, 0, 0, 0, 2, 2, 2], "FAMILY MEDICINE": [22, 23, 24, 0, 0, 0, 0], "FAMILY PRACTICE": [0, 0, 0, 25, 30, 26, 39], "GASTROENTEROLOGY": [4, 4, 4, 4, 2, 4, 7], "GENERAL SURGERY": [5, 4, 4, 4, 5, 5, 6], "HEMATOLOGY/ONCOLOGY": [2, 2, 4, 4, 3, 4, 3], "HOSPICE/PALLIATIVE CARE": [1, 0, 0, 0, 0, 0, 0], "HOSPITALIST": [12, 9, 25, 21, 11, 11, 11], "INFECTIOUS DISEASE": [1, 1, 1, 1, 1, 1, 1], "INTERNAL MEDICINE": [7, 10, 13, 11, 11, 14, 13], "INTERVENTIONAL CARDIOLOGY": [0, 0, 1, 1, 0, 0, 0], "INTERVENTIONAL PAIN MANAGEMENT": [0, 0, 0, 0, 0, 0, 1], "INTERVENTIONAL RADIOLOGY": [2, 1, 1, 1, 1, 1, 1], "MEDICAL ONCOLOGY": [1, 1, 1, 1, 1, 1, 1], "MENTAL HEALTH COUNSELOR": [0, 0, 0, 0, 0, 4, 5], "NEPHROLOGY": [5, 7, 6, 7, 5, 6, 6], "NEUROLOGY": [6, 3, 3, 4, 4, 5, 5], "NEUROSURGERY": [1, 0, 0, 0, 0, 0, 1], "NURSE PRACTITIONER": [82, 96, 103, 100, 109, 116, 123], "OBSTETRICS/GYNECOLOGY": [6, 6, 5, 5, 7, 8, 7], "OCCUPATIONAL THERAPIST IN PRIVATE PRACTICE": [0, 0, 0, 0, 0, 2, 1], "OCCUPATIONAL THERAPY": [0, 0, 0, 2, 2, 0, 0], "OPHTHALMOLOGY": [4, 5, 6, 5, 4, 3, 3], "OPTOMETRY": [13, 12, 13, 13, 13, 11, 13], "ORTHOPEDIC SURGERY": [6, 6, 5, 6, 8, 6, 10], "OTOLARYNGOLOGY": [2, 2, 2, 2, 2, 2, 2], "PAIN MANAGEMENT": [1, 1, 1, 1, 1, 1, 1], "PATHOLOGY": [6, 6, 6, 12, 11, 12, 12], "PEDIATRIC MEDICINE": [0, 1, 0, 0, 0, 0, 0], "PHYSICAL MEDICINE AND REHABILITATION": [4, 4, 3, 2, 4, 4, 5], "PHYSICAL THERAPIST IN PRIVATE PRACTICE": [0, 0, 0, 0, 0, 3, 3], "PHYSICAL THERAPY": [0, 5, 6, 4, 2, 0, 0], "PHYSICIAN ASSISTANT": [13, 14, 13, 12, 17, 17, 18], "PLASTIC AND RECONSTRUCTIVE SURGERY": [2, 2, 2, 3, 3, 3, 2], "PODIATRY": [3, 3, 3, 3, 4, 3, 3], "PSYCHIATRY": [1, 0, 0, 3, 1, 2, 2], "PSYCHOLOGIST, CLINICAL": [0, 0, 1, 0, 0, 0, 0], "PULMONARY DISEASE": [6, 5, 6, 5, 4, 5, 5], "QUALIFIED AUDIOLOGIST": [1, 1, 1, 1, 1, 1, 1], "QUALIFIED SPEECH LANGUAGE PATHOLOGIST": [0, 0, 0, 0, 0, 0, 1], "RADIATION ONCOLOGY": [2, 2, 2, 2, 2, 7, 1], "RHEUMATOLOGY": [1, 1, 1, 1, 1, 1, 2], "SLEEP MEDICINE": [1, 1, 1, 1, 1, 1, 1], "SURGICAL ONCOLOGY": [1, 1, 1, 1, 1, 1, 1], "THORACIC SURGERY": [4, 4, 4, 3, 3, 3, 3], "UROLOGY": [1, 2, 1, 2, 1, 1, 1], "VASCULAR SURGERY": [3, 3, 3, 3, 3, 3, 2]}}, "Trumbull County": {"totals": [459, 386, 418, 445, 538, 508, 512], "specialties": {"ADDICTION MEDICINE": [0, 2, 2, 2, 1, 1, 0], "ADVANCED HEART FAILURE AND TRANSPLANT CARDIOLOGY": [1, 0, 0, 0, 0, 0, 0], "ALLERGY/IMMUNOLOGY": [2, 1, 1, 2, 2, 2, 2], "ANESTHESIOLOGY": [9, 1, 2, 8, 13, 2, 5], "CARDIAC ELECTROPHYSIOLOGY": [0, 0, 0, 0, 1, 1, 0], "CARDIAC SURGERY": [2, 2, 2, 2, 1, 1, 1], "CARDIOVASCULAR DISEASE (CARDIOLOGY)": [13, 12, 12, 13, 14, 12, 10], "CERTIFIED CLINICAL NURSE SPECIALIST (CNS)": [4, 3, 5, 3, 2, 4, 2], "CERTIFIED NURSE MIDWIFE (CNM)": [1, 0, 0, 2, 1, 2, 1], "CERTIFIED REGISTERED NURSE ANESTHETIST (CRNA)": [23, 9, 8, 25, 47, 29, 18], "CHIROPRACTIC": [30, 26, 25, 25, 25, 24, 24], "CLINICAL PSYCHOLOGIST": [0, 0, 0, 13, 10, 12, 9], "CLINICAL SOCIAL WORKER": [15, 10, 13, 14, 19, 20, 21], "DENTIST": [0, 0, 0, 0, 0, 0, 1], "DERMATOLOGY": [4, 3, 4, 4, 5, 5, 6], "DIAGNOSTIC RADIOLOGY": [9, 16, 33, 18, 28, 3, 9], "EMERGENCY MEDICINE": [10, 7, 6, 9, 5, 8, 5], "ENDOCRINOLOGY": [1, 1, 1, 1, 1, 1, 0], "FAMILY MEDICINE": [43, 39, 39, 0, 0, 0, 0], "FAMILY PRACTICE": [0, 0, 0, 39, 41, 46, 42], "GASTROENTEROLOGY": [8, 9, 9, 9, 12, 10, 10], "GENERAL PRACTICE": [1, 1, 1, 0, 0, 0, 0], "GENERAL SURGERY": [9, 10, 10, 5, 4, 5, 3], "HAND SURGERY": [1, 1, 1, 0, 1, 1, 1], "HEMATOLOGY/ONCOLOGY": [5, 2, 0, 2, 4, 0, 0], "HOSPICE/PALLIATIVE CARE": [1, 0, 0, 0, 0, 0, 0], "HOSPITALIST": [0, 2, 3, 2, 2, 3, 3], "INFECTIOUS DISEASE": [0, 0, 0, 1, 1, 1, 1], "INTERNAL MEDICINE": [49, 41, 42, 39, 46, 38, 36], "INTERVENTIONAL CARDIOLOGY": [1, 0, 1, 4, 4, 4, 4], "INTERVENTIONAL PAIN MANAGEMENT": [1, 1, 1, 1, 1, 1, 1], "INTERVENTIONAL RADIOLOGY": [0, 0, 0, 0, 0, 0, 1], "MARRIAGE AND FAMILY THERAPIST": [0, 0, 0, 0, 0, 1, 0], "MAXILLOFACIAL SURGERY": [1, 1, 0, 0, 0, 1, 0], "MENTAL HEALTH COUNSELOR": [0, 0, 0, 0, 0, 15, 27], "NEUROLOGY": [1, 2, 2, 2, 4, 2, 2], "NEUROSURGERY": [1, 1, 0, 0, 0, 0, 0], "NURSE PRACTITIONER": [51, 47, 54, 59, 82, 94, 111], "OBSTETRICS/GYNECOLOGY": [9, 8, 7, 7, 8, 8, 7], "OCCUPATIONAL THERAPIST IN PRIVATE PRACTICE": [0, 0, 0, 0, 0, 1, 3], "OCCUPATIONAL THERAPY": [6, 2, 4, 6, 1, 0, 0], "OPHTHALMOLOGY": [4, 5, 5, 5, 6, 4, 5], "OPTOMETRY": [13, 13, 12, 13, 15, 12, 10], "ORTHOPEDIC SURGERY": [10, 8, 8, 12, 15, 15, 17], "OTOLARYNGOLOGY": [4, 4, 3, 3, 4, 4, 3], "PAIN MANAGEMENT": [4, 3, 3, 2, 3, 3, 4], "PATHOLOGY": [3, 1, 1, 1, 6, 3, 4], "PEDIATRIC MEDICINE": [3, 1, 1, 1, 1, 1, 2], "PHYSICAL MEDICINE AND REHABILITATION": [4, 3, 5, 5, 6, 8, 6], "PHYSICAL THERAPIST IN PRIVATE PRACTICE": [0, 0, 0, 0, 0, 41, 46], "PHYSICAL THERAPY": [37, 30, 35, 35, 36, 0, 0], "PHYSICIAN ASSISTANT": [12, 12, 12, 11, 21, 19, 18], "PLASTIC AND RECONSTRUCTIVE SURGERY": [2, 1, 1, 2, 2, 2, 2], "PODIATRY": [11, 11, 12, 17, 10, 14, 14], "PSYCHIATRY": [8, 8, 5, 5, 5, 5, 3], "PSYCHOLOGIST, CLINICAL": [9, 10, 9, 0, 0, 0, 0], "PULMONARY DISEASE": [3, 3, 4, 4, 4, 4, 3], "QUALIFIED AUDIOLOGIST": [8, 6, 7, 5, 6, 5, 2], "QUALIFIED SPEECH LANGUAGE PATHOLOGIST": [1, 0, 0, 1, 1, 1, 2], "RADIATION ONCOLOGY": [5, 2, 1, 1, 1, 1, 0], "REGISTERED DIETITIAN OR NUTRITION PROFESSIONAL": [0, 1, 1, 0, 1, 0, 1], "RHEUMATOLOGY": [1, 1, 1, 0, 1, 0, 0], "SLEEP MEDICINE": [1, 1, 1, 2, 2, 1, 1], "SPORTS MEDICINE": [0, 0, 0, 0, 0, 0, 1], "THORACIC SURGERY": [1, 1, 1, 0, 1, 1, 0], "UNDEFINED NON-PHYSICIAN TYPE (SPECIFY)": [0, 0, 0, 0, 0, 0, 1], "UROLOGY": [2, 0, 1, 2, 4, 4, 1], "VASCULAR SURGERY": [1, 1, 1, 1, 1, 2, 0]}}, "Tuscarawas County": {"totals": [214, 209, 208, 212, 235, 241, 271], "specialties": {"ANESTHESIOLOGY": [4, 3, 4, 1, 3, 4, 7], "CARDIAC ELECTROPHYSIOLOGY": [2, 1, 1, 1, 1, 1, 0], "CARDIOVASCULAR DISEASE (CARDIOLOGY)": [6, 9, 7, 5, 6, 8, 10], "CERTIFIED CLINICAL NURSE SPECIALIST (CNS)": [1, 0, 0, 0, 0, 0, 1], "CERTIFIED NURSE MIDWIFE (CNM)": [0, 0, 0, 0, 0, 0, 1], "CERTIFIED REGISTERED NURSE ANESTHETIST (CRNA)": [3, 2, 1, 5, 4, 5, 11], "CHIROPRACTIC": [23, 23, 21, 20, 17, 17, 11], "CLINICAL PSYCHOLOGIST": [0, 0, 0, 1, 1, 1, 1], "CLINICAL SOCIAL WORKER": [5, 5, 5, 6, 4, 4, 2], "DERMATOLOGY": [1, 2, 1, 1, 1, 1, 2], "DIAGNOSTIC RADIOLOGY": [0, 0, 1, 1, 1, 1, 1], "EMERGENCY MEDICINE": [13, 15, 12, 12, 25, 19, 27], "FAMILY MEDICINE": [27, 26, 26, 0, 0, 0, 0], "FAMILY PRACTICE": [0, 0, 0, 26, 26, 22, 26], "GENERAL SURGERY": [5, 6, 4, 5, 4, 9, 8], "GYNECOLOGICAL ONCOLOGY": [1, 1, 1, 1, 1, 1, 1], "HEMATOLOGY/ONCOLOGY": [0, 0, 0, 0, 0, 1, 0], "HOSPITALIST": [1, 1, 1, 2, 1, 0, 2], "INTERNAL MEDICINE": [12, 9, 12, 10, 14, 13, 15], "INTERVENTIONAL CARDIOLOGY": [2, 0, 0, 0, 1, 0, 0], "INTERVENTIONAL PAIN MANAGEMENT": [0, 0, 0, 0, 0, 1, 1], "MAXILLOFACIAL SURGERY": [1, 1, 1, 0, 0, 0, 0], "MENTAL HEALTH COUNSELOR": [0, 0, 0, 0, 0, 15, 12], "NEPHROLOGY": [0, 0, 0, 0, 0, 0, 1], "NEUROLOGY": [0, 0, 0, 1, 0, 1, 1], "NURSE PRACTITIONER": [46, 51, 52, 57, 62, 56, 70], "OBSTETRICS/GYNECOLOGY": [4, 5, 6, 5, 5, 6, 6], "OCCUPATIONAL THERAPY": [1, 0, 0, 0, 0, 0, 0], "OPHTHALMOLOGY": [3, 3, 3, 3, 3, 3, 2], "OPTOMETRY": [13, 13, 13, 13, 15, 14, 16], "ORTHOPEDIC SURGERY": [2, 4, 3, 4, 4, 5, 6], "OTOLARYNGOLOGY": [2, 2, 2, 2, 2, 1, 0], "PATHOLOGY": [2, 2, 2, 2, 2, 1, 0], "PHYSICAL MEDICINE AND REHABILITATION": [0, 0, 0, 0, 0, 0, 1], "PHYSICAL THERAPIST IN PRIVATE PRACTICE": [0, 0, 0, 0, 0, 0, 1], "PHYSICAL THERAPY": [3, 1, 1, 1, 5, 0, 0], "PHYSICIAN ASSISTANT": [12, 12, 15, 15, 14, 18, 18], "PODIATRY": [7, 6, 6, 7, 7, 6, 6], "PSYCHIATRY": [2, 0, 0, 1, 1, 1, 1], "PSYCHOLOGIST, CLINICAL": [1, 1, 1, 0, 0, 0, 0], "PULMONARY DISEASE": [1, 1, 2, 2, 1, 1, 1], "QUALIFIED AUDIOLOGIST": [3, 1, 1, 0, 2, 2, 0], "QUALIFIED SPEECH LANGUAGE PATHOLOGIST": [1, 1, 1, 0, 0, 0, 0], "RADIATION ONCOLOGY": [1, 0, 0, 0, 0, 0, 0], "REGISTERED DIETITIAN OR NUTRITION PROFESSIONAL": [1, 0, 0, 0, 0, 0, 0], "SPORTS MEDICINE": [1, 1, 1, 1, 1, 1, 1], "UROLOGY": [1, 1, 1, 1, 1, 1, 1], "VASCULAR SURGERY": [0, 0, 0, 0, 0, 1, 0]}}, "Vinton County": {"totals": [4, 4, 3, 3, 3, 10, 9], "specialties": {"CHIROPRACTIC": [1, 1, 1, 1, 1, 1, 0], "CLINICAL SOCIAL WORKER": [0, 0, 0, 1, 1, 1, 1], "FAMILY MEDICINE": [0, 1, 1, 0, 0, 0, 0], "FAMILY PRACTICE": [0, 0, 0, 1, 1, 1, 1], "MENTAL HEALTH COUNSELOR": [0, 0, 0, 0, 0, 3, 3], "NURSE PRACTITIONER": [0, 0, 0, 0, 0, 3, 3], "PHYSICAL THERAPY": [2, 2, 1, 0, 0, 0, 0], "PSYCHIATRY": [1, 0, 0, 0, 0, 1, 1]}}, "Washington County": {"totals": [374, 402, 422, 469, 421, 436, 458], "specialties": {"ALLERGY/IMMUNOLOGY": [1, 1, 1, 1, 1, 1, 0], "ANESTHESIOLOGY": [14, 13, 12, 17, 16, 19, 19], "CARDIAC ELECTROPHYSIOLOGY": [0, 2, 1, 1, 1, 2, 4], "CARDIAC SURGERY": [0, 1, 1, 1, 1, 0, 0], "CARDIOVASCULAR DISEASE (CARDIOLOGY)": [2, 3, 3, 2, 2, 2, 4], "CERTIFIED CLINICAL NURSE SPECIALIST (CNS)": [3, 2, 2, 1, 1, 1, 1], "CERTIFIED NURSE MIDWIFE (CNM)": [1, 1, 1, 1, 1, 1, 1], "CERTIFIED REGISTERED NURSE ANESTHETIST (CRNA)": [29, 30, 30, 33, 31, 34, 36], "CHIROPRACTIC": [8, 8, 8, 8, 8, 8, 9], "CLINICAL PSYCHOLOGIST": [0, 0, 0, 6, 4, 3, 3], "CLINICAL SOCIAL WORKER": [6, 6, 5, 4, 3, 3, 3], "DERMATOLOGY": [2, 2, 2, 3, 2, 3, 4], "DIAGNOSTIC RADIOLOGY": [1, 12, 13, 18, 13, 7, 4], "EMERGENCY MEDICINE": [10, 7, 9, 22, 19, 22, 27], "ENDOCRINOLOGY": [3, 3, 3, 1, 1, 1, 1], "FAMILY MEDICINE": [41, 42, 37, 0, 0, 0, 0], "FAMILY PRACTICE": [0, 0, 0, 42, 38, 38, 33], "GASTROENTEROLOGY": [2, 1, 2, 2, 2, 3, 3], "GENERAL PRACTICE": [0, 0, 0, 1, 0, 0, 0], "GENERAL SURGERY": [10, 10, 9, 7, 6, 6, 10], "GERIATRIC MEDICINE": [0, 1, 1, 1, 0, 0, 0], "HEMATOLOGY/ONCOLOGY": [2, 2, 2, 2, 3, 3, 3], "HOSPICE/PALLIATIVE CARE": [1, 1, 1, 1, 1, 1, 1], "HOSPITALIST": [9, 11, 14, 13, 11, 9, 10], "INFECTIOUS DISEASE": [2, 3, 3, 3, 2, 1, 1], "INTERNAL MEDICINE": [22, 20, 24, 21, 21, 24, 27], "INTERVENTIONAL CARDIOLOGY": [1, 3, 3, 2, 3, 2, 3], "INTERVENTIONAL RADIOLOGY": [1, 3, 2, 4, 2, 2, 2], "MAXILLOFACIAL SURGERY": [1, 1, 1, 1, 1, 1, 1], "MENTAL HEALTH COUNSELOR": [0, 0, 0, 0, 0, 2, 5], "NEPHROLOGY": [5, 6, 6, 5, 5, 3, 3], "NEUROLOGY": [2, 2, 2, 2, 4, 4, 4], "NEUROSURGERY": [4, 3, 4, 5, 4, 3, 3], "NURSE PRACTITIONER": [73, 70, 72, 85, 76, 81, 90], "OBSTETRICS/GYNECOLOGY": [7, 7, 5, 9, 6, 10, 9], "OCCUPATIONAL THERAPIST IN PRIVATE PRACTICE": [0, 0, 0, 0, 0, 5, 5], "OCCUPATIONAL THERAPY": [0, 1, 1, 4, 4, 0, 0], "OPHTHALMOLOGY": [6, 6, 7, 7, 7, 5, 4], "OPTOMETRY": [7, 9, 10, 9, 8, 8, 9], "ORTHOPEDIC SURGERY": [7, 7, 8, 8, 8, 9, 7], "OSTEOPATHIC MANIPULATIVE MEDICINE": [0, 0, 4, 3, 3, 0, 0], "OTOLARYNGOLOGY": [1, 2, 2, 1, 1, 1, 2], "PAIN MANAGEMENT": [1, 1, 1, 1, 1, 0, 0], "PATHOLOGY": [1, 1, 1, 1, 1, 1, 1], "PEDIATRIC MEDICINE": [1, 1, 2, 1, 1, 1, 1], "PHYSICAL MEDICINE AND REHABILITATION": [6, 5, 6, 6, 6, 5, 5], "PHYSICAL THERAPIST IN PRIVATE PRACTICE": [0, 0, 0, 0, 0, 33, 34], "PHYSICAL THERAPY": [19, 28, 28, 35, 29, 0, 0], "PHYSICIAN ASSISTANT": [31, 36, 40, 40, 35, 41, 42], "PLASTIC AND RECONSTRUCTIVE SURGERY": [2, 2, 2, 2, 2, 1, 2], "PODIATRY": [5, 4, 4, 4, 4, 4, 4], "PSYCHIATRY": [4, 3, 3, 4, 3, 3, 3], "PSYCHOLOGIST, CLINICAL": [5, 5, 6, 0, 0, 0, 0], "PULMONARY DISEASE": [2, 2, 3, 4, 3, 4, 3], "QUALIFIED AUDIOLOGIST": [1, 1, 1, 1, 1, 1, 0], "QUALIFIED SPEECH LANGUAGE PATHOLOGIST": [1, 2, 3, 1, 2, 2, 2], "RADIATION ONCOLOGY": [1, 1, 2, 1, 2, 1, 2], "RHEUMATOLOGY": [1, 1, 1, 2, 2, 1, 1], "SPORTS MEDICINE": [1, 1, 1, 2, 2, 2, 2], "SURGICAL ONCOLOGY": [1, 1, 1, 1, 1, 1, 1], "THORACIC SURGERY": [1, 0, 1, 0, 0, 1, 1], "UROLOGY": [5, 4, 4, 5, 5, 5, 3], "VASCULAR SURGERY": [1, 1, 1, 1, 1, 1, 0]}}};
+
+const COUNTIES = Object.keys(ALL_DATA);
+let currentCounty = COUNTIES[0];
+let lineChart, barChart, growthChart, cmpChart1, cmpChart2, cmpBarChart, regionLineChart;
+
+// ── INIT ──
+window.onload = () => {
+  // Populate selects
+  const cs = document.getElementById('countySelect');
+  const cmp = document.getElementById('cmpSelect');
+  COUNTIES.forEach(c => {
+    cs.innerHTML += `<option value="${c}">${c}</option>`;
+    if (c !== currentCounty) cmp.innerHTML += `<option value="${c}">${c}</option>`;
+  });
+  renderAll();
+  buildRegionTable();
+  buildRegionLine();
+};
+
+function setCounty(c) {
+  currentCounty = c;
+  // Reset charts
+  [lineChart, barChart, growthChart].forEach(ch => ch && ch.destroy());
+  lineChart = barChart = growthChart = null;
+  renderAll();
+}
+
+function renderAll() {
+  buildStatsBar();
+  buildHeatmap();
+  // Re-render active chart panels if visible
+  const activeTab = document.querySelector('.tab.active')?.onclick?.toString().match(/'([^']+)'/)?.[1];
+  if (activeTab === 'trends') buildLineChart(parseInt(document.getElementById('topNSlider').value));
+  if (activeTab === 'breakdown') buildBarChart();
+  if (activeTab === 'growth') buildGrowthChart();
+}
+
+function getCountyData(c) { return ALL_DATA[c]; }
+
+function cellColor(v, max) {
+  if (v === 0) return 'transparent';
+  const t = Math.pow(v / max, 0.6);
+  const r = Math.round(30 + t * 200), g = Math.round(50 + t * 100), b = Math.round(15 + t * 5);
+  return `rgba(${r},${g},${b},${0.25 + t * 0.7})`;
+}
+
+// ── STATS BAR ──
+function buildStatsBar() {
+  const d = getCountyData(currentCounty);
+  const bar = document.getElementById('statsBar');
+  bar.innerHTML = '';
+  d.totals.forEach((t, i) => {
+    const prev = i > 0 ? d.totals[i-1] : null;
+    const delta = prev !== null ? t - prev : null;
+    const sign = delta > 0 ? '+' : '';
+    const cls = delta === null ? 'fl' : delta > 0 ? 'up' : delta < 0 ? 'dn' : 'fl';
+    bar.innerHTML += `<div class="stat-pill">
+      <div class="stat-year">${YEARS[i]}</div>
+      <div class="stat-count">${t}</div>
+      ${delta !== null ? `<div class="stat-delta ${cls}">${sign}${delta}</div>` : '<div class="stat-delta fl">base</div>'}
+    </div>`;
+  });
+}
+
+// ── HEATMAP ──
+let heatSort = 'amount';
+function setHeatSort(mode) {
+  heatSort = mode;
+  document.getElementById('sortAmount').style.background = mode === 'amount' ? 'var(--cai-blue)' : 'transparent';
+  document.getElementById('sortAmount').style.color = mode === 'amount' ? 'var(--text)' : 'var(--muted)';
+  document.getElementById('sortAmount').style.borderColor = mode === 'amount' ? 'var(--cai-blue)' : 'var(--border)';
+  document.getElementById('sortAlpha').style.background = mode === 'alpha' ? 'var(--cai-blue)' : 'transparent';
+  document.getElementById('sortAlpha').style.color = mode === 'alpha' ? 'var(--text)' : 'var(--muted)';
+  document.getElementById('sortAlpha').style.borderColor = mode === 'alpha' ? 'var(--cai-blue)' : 'var(--border)';
+  buildHeatmap();
+}
+
+function buildHeatmap() {
+  const d = getCountyData(currentCounty);
+  let specs = Object.entries(d.specialties);
+  if (heatSort === 'amount') specs.sort((a, b) => b[1].reduce((x,y)=>x+y,0) - a[1].reduce((x,y)=>x+y,0));
+  else specs.sort((a, b) => a[0].localeCompare(b[0]));
+  const max = Math.max(...specs.flatMap(([,v]) => v));
+  const tbl = document.getElementById('hmTable');
+  let h = '<thead><tr><th>Specialty</th>';
+  YEARS.forEach(y => h += `<th class="yh">${y}</th>`);
+  h += '<th class="yh" style="color:var(--accent)">Total</th></tr></thead><tbody>';
+  specs.forEach(([name, vals]) => {
+    const tot = vals.reduce((a,b)=>a+b,0);
+    h += `<tr><td class="sp">${name}</td>`;
+    vals.forEach(v => {
+      const bg = cellColor(v, max);
+      const color = v > 0 ? 'var(--text)' : 'var(--muted2)';
+      h += `<td class="cv" style="background:${bg};color:${color}">${v||'·'}</td>`;
+    });
+    h += `<td class="cv" style="color:var(--accent);font-weight:500">${tot}</td></tr>`;
+  });
+  tbl.innerHTML = h + '</tbody>';
+}
+
+// ── LINE CHART ──
+function buildLineChart(topN) {
+  const d = getCountyData(currentCounty);
+  const ranked = Object.entries(d.specialties)
+    .map(([n,v]) => ({n, v, tot: v.reduce((a,b)=>a+b,0)}))
+    .sort((a,b) => b.tot - a.tot).slice(0, topN);
+  const datasets = ranked.map((s,i) => ({
+    label: s.n, data: s.v,
+    borderColor: PALETTE[i%PALETTE.length],
+    backgroundColor: PALETTE[i%PALETTE.length]+'18',
+    borderWidth: 2, pointRadius: 4, tension: 0.35, fill: false
+  }));
+  if (lineChart) lineChart.destroy();
+  lineChart = new Chart(document.getElementById('lineChart'), {
+    type: 'line',
+    data: { labels: YEARS.map(String), datasets },
+    options: chartOpts()
+  });
+}
+
+function updateTopN(v) {
+  document.getElementById('topNLbl').textContent = v;
+  buildLineChart(parseInt(v));
+}
+
+// ── BAR CHART ──
+function buildBarChart() {
+  const yr = parseInt(document.getElementById('yearSel').value);
+  const yIdx = YEARS.indexOf(yr);
+  const d = getCountyData(currentCounty);
+  const items = Object.entries(d.specialties)
+    .map(([n,v]) => ({n, val: v[yIdx]}))
+    .filter(x => x.val > 0)
+    .sort((a,b) => b.val - a.val);
+  if (barChart) barChart.destroy();
+  barChart = new Chart(document.getElementById('barChart'), {
+    type: 'bar',
+    data: {
+      labels: items.map(x=>x.n),
+      datasets: [{
+        data: items.map(x=>x.val),
+        backgroundColor: items.map((_,i) => PALETTE[i%PALETTE.length]+'99'),
+        borderColor: items.map((_,i) => PALETTE[i%PALETTE.length]),
+        borderWidth: 1, borderRadius: 4
+      }]
+    },
+    options: { ...chartOpts(), indexAxis: 'y', plugins: { legend: { display: false } } }
+  });
+}
+
+function updateBar() { buildBarChart(); }
+
+// ── GROWTH CHART ──
+function buildGrowthChart() {
+  const d = getCountyData(currentCounty);
+  const items = Object.entries(d.specialties)
+    .map(([n,v]) => ({n, delta: v[6]-v[0]}))
+    .sort((a,b) => b.delta - a.delta);
+  const colors = items.map(x => x.delta > 0 ? '#4caf8a' : x.delta < 0 ? '#e05c5c' : '#6b7a99');
+  if (growthChart) growthChart.destroy();
+  growthChart = new Chart(document.getElementById('growthChart'), {
+    type: 'bar',
+    data: {
+      labels: items.map(x=>x.n),
+      datasets: [{
+        data: items.map(x=>x.delta),
+        backgroundColor: colors.map(c=>c+'99'),
+        borderColor: colors, borderWidth: 1, borderRadius: 3
+      }]
+    },
+    options: { ...chartOpts(), indexAxis: 'y', plugins: { legend: { display: false } } }
+  });
+}
+
+// ── COMPARE ──
+function updateCompare() {
+  const c2 = document.getElementById('cmpSelect').value;
+  const c1 = currentCounty;
+  document.getElementById('cmpTitle1').textContent = c1;
+  document.getElementById('cmpTitle2').textContent = c2;
+
+  [cmpChart1, cmpChart2, cmpBarChart].forEach(ch => ch && ch.destroy());
+
+  // Donut-style breakdown for 2025
+  function topSpecFor(county, n=6) {
+    const d = getCountyData(county);
+    return Object.entries(d.specialties)
+      .map(([k,v]) => ({k, val: v[6]}))
+      .filter(x=>x.val>0).sort((a,b)=>b.val-a.val).slice(0,n);
+  }
+
+  function makeDoughnut(canvasId, county) {
+    const items = topSpecFor(county);
+    return new Chart(document.getElementById(canvasId), {
+      type: 'doughnut',
+      data: {
+        labels: items.map(x=>x.k),
+        datasets: [{ data: items.map(x=>x.val), backgroundColor: PALETTE.slice(0,items.length).map(c=>c+'cc'), borderWidth: 0 }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { labels: { color: '#8b949e', font: { family: 'DM Mono', size: 9 }, boxWidth: 10 } } }
+      }
+    });
+  }
+
+  cmpChart1 = makeDoughnut('cmpChart1', c1);
+  cmpChart2 = makeDoughnut('cmpChart2', c2);
+
+  // Side-by-side totals
+  const d1 = getCountyData(c1), d2 = getCountyData(c2);
+  cmpBarChart = new Chart(document.getElementById('cmpBarChart'), {
+    type: 'bar',
+    data: {
+      labels: YEARS.map(String),
+      datasets: [
+        { label: c1, data: d1.totals, backgroundColor: PALETTE[0]+'99', borderColor: PALETTE[0], borderWidth: 1, borderRadius: 3 },
+        { label: c2, data: d2.totals, backgroundColor: PALETTE[1]+'99', borderColor: PALETTE[1], borderWidth: 1, borderRadius: 3 }
+      ]
+    },
+    options: chartOpts()
+  });
+}
+
+// ── REGION TABLE ──
+let regionSort = { col: 'tot25', asc: false };
+
+function buildRegionTable() {
+  const idxA = parseInt(document.getElementById('regionYearA')?.value ?? 0);
+  const idxB = parseInt(document.getElementById('regionYearB')?.value ?? 6);
+  const yearA = YEARS[idxA], yearB = YEARS[idxB];
+
+  const rows = COUNTIES.map(c => {
+    const d = getCountyData(c);
+    const t = d.totals;
+    return { name: c, tot19: t[idxA], tot25: t[idxB], delta: t[idxB]-t[idxA], pct: t[idxA] > 0 ? Math.round((t[idxB]-t[idxA])/t[idxA]*100) : 0 };
+  });
+  const maxTot = Math.max(...rows.map(r => r.tot25));
+
+  rows.sort((a,b) => regionSort.asc ? a[regionSort.col] - b[regionSort.col] : b[regionSort.col] - a[regionSort.col]);
+  if (regionSort.col === 'name') rows.sort((a,b) => regionSort.asc ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name));
+
+  const tbl = document.getElementById('regionTable');
+  const arrow = col => regionSort.col === col ? (regionSort.asc ? ' ▲' : ' ▼') : '';
+
+  tbl.innerHTML = `<thead><tr>
+    <th class="sort-btn" onclick="sortRegion('name')">County${arrow('name')}</th>
+    <th class="sort-btn" onclick="sortRegion('tot19')" style="text-align:right">${yearA}${arrow('tot19')}</th>
+    <th class="sort-btn" onclick="sortRegion('tot25')" style="text-align:right">${yearB}${arrow('tot25')}</th>
+    <th class="sort-btn" onclick="sortRegion('delta')" style="text-align:right">Net Change${arrow('delta')}</th>
+    <th class="sort-btn" onclick="sortRegion('pct')" style="text-align:right">% Change${arrow('pct')}</th>
+    <th>${yearB} Volume</th>
+  </tr></thead><tbody>` +
+  rows.map(r => {
+    const barW = Math.round(r.tot25 / maxTot * 100);
+    const dColor = r.delta >= 0 ? 'var(--accent2)' : 'var(--danger)';
+    return `<tr style="cursor:pointer" onclick="setCounty('${r.name}'); document.getElementById('countySelect').value='${r.name}'; switchTab('heatmap', document.querySelector('.tab'))">
+      <td>${r.name}</td>
+      <td class="num">${r.tot19}</td>
+      <td class="num" style="color:var(--accent)">${r.tot25}</td>
+      <td class="num" style="color:${dColor}">${r.delta >= 0 ? '+' : ''}${r.delta}</td>
+      <td class="num" style="color:${dColor}">${r.pct >= 0 ? '+' : ''}${r.pct}%</td>
+      <td class="bar-cell"><div class="mini-bar-bg"><div class="mini-bar-fill" style="width:${barW}%"></div></div></td>
+    </tr>`;
+  }).join('') + '</tbody>';
+}
+
+function sortRegion(col) {
+  if (regionSort.col === col) regionSort.asc = !regionSort.asc;
+  else { regionSort.col = col; regionSort.asc = false; }
+  buildRegionTable();
+}
+
+// ── REGION LINE CHART ──
+function buildRegionLine() {
+  const regionTotals = YEARS.map((_,i) => COUNTIES.reduce((s,c) => s + ALL_DATA[c].totals[i], 0));
+  regionLineChart = new Chart(document.getElementById('regionLineChart'), {
+    type: 'line',
+    data: {
+      labels: YEARS.map(String),
+      datasets: [{
+        label: 'All 32 Counties',
+        data: regionTotals,
+        borderColor: PALETTE[0], backgroundColor: PALETTE[0]+'22',
+        borderWidth: 2.5, pointRadius: 5, tension: 0.3, fill: true
+      }]
+    },
+    options: { ...chartOpts(), plugins: { legend: { display: false } } }
+  });
+}
+
+// ── TAB SWITCHING ──
+function switchTab(id, el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
+  if (id === 'trends' && !lineChart) buildLineChart(parseInt(document.getElementById('topNSlider').value));
+  if (id === 'breakdown' && !barChart) buildBarChart();
+  if (id === 'growth' && !growthChart) buildGrowthChart();
+  if (id === 'compare') updateCompare();
+}
+
+// ── SHARED CHART OPTIONS ──
+function chartOpts() {
+  return {
+    responsive: true,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { labels: { color: '#8b949e', font: { family: 'DM Mono', size: 10 }, boxWidth: 12 } }
+    },
+    scales: {
+      x: { grid: { color: '#1f2638' }, ticks: { color: '#6b7a99', font: { family: 'DM Mono', size: 10 } } },
+      y: { grid: { color: '#1f2638' }, ticks: { color: '#6b7a99', font: { family: 'DM Mono', size: 10 } } }
+    }
+  };
+}
+</script>
+</body>
+</html>
